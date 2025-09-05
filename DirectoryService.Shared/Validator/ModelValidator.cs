@@ -1,26 +1,28 @@
 ﻿using DirectoryService.Shared.ErrorClasses;
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace DirectoryService.Shared.Validator;
 public class ModelValidator
 {
-    private readonly Queue<IValidationUnit> _validationOptions = new();
+    private readonly List<IValidationUnit> _validationOptions = new();
 
     public ModelValidator()
     {}
 
-    public ModelValidationUnit<T> Validate<T>(T value, string valueName)
-        where T : class
+    public ModelValidationUnit<T> Validate<T>(
+        T value,
+        [CallerArgumentExpression("value")] string valueName = null!)
+            where T : class
     {
         var unit = new ModelValidationUnit<T>(value, valueName);
-        _validationOptions.Enqueue(unit);
+        _validationOptions.Add(unit);
         return unit;
     }
 
     public List<List<Error>> ValidateAll(out bool IsError)
     {
-        IsError = true;
         var errors = new List<List<Error>>();
 
         foreach(var unit in _validationOptions)
@@ -30,12 +32,7 @@ public class ModelValidator
                 errors.Add(valueErrors);
         }
 
-        if (errors.Count > 0)
-        {
-            return errors;
-        }
-
-        IsError = false;
+        IsError = errors.Count > 0;
         return errors;
     }
 }
@@ -51,7 +48,7 @@ public class ModelValidationUnit<T> : IValidationUnit
 {
     private readonly T _value;
     private readonly string _paramName;
-    private readonly Queue<Func<T, Error?>> _checks = new();
+    private readonly List<Func<T, Error?>> _checks = new();
 
     internal ModelValidationUnit(
         T value,
@@ -80,7 +77,7 @@ public class ModelValidationUnit<T> : IValidationUnit
 
     public ModelValidationUnit<T> NotNullOrEmpty()
     {
-        _checks.Enqueue((x) =>
+        _checks.Add((x) =>
         {
             if (x is null || x == default)
                 return ValidationErr(ErrStringNotNullOrEmpty());
@@ -107,7 +104,7 @@ public class ModelValidationUnit<T> : IValidationUnit
         => $"Value should have minimal length of {length}!";
     public ModelValidationUnit<T> MinLength(int minLengthInclusive) // x or more is ok
     {
-        _checks.Enqueue((x) =>
+        _checks.Add((x) =>
         {
             if (x is string xString)
             {
@@ -121,13 +118,6 @@ public class ModelValidationUnit<T> : IValidationUnit
                     return ValidationErr(ErrStringMinLength(minLengthInclusive));
             }
 
-            //if (typeof(T).IsArray)
-            //{
-            //    var xArray = x as Array;
-            //    if (xArray!.Length < minLengthInclusive)
-            //        return ValidationErr(x, ErrStringMinLength(minLengthInclusive));
-            //}
-
             return null;
         });
 
@@ -138,7 +128,7 @@ public class ModelValidationUnit<T> : IValidationUnit
         => $"Value should have maximum length of {length}!";
     public ModelValidationUnit<T> MaxLength(int maxLengthInclusive) // x or less is ok
     {
-        _checks.Enqueue((x) =>
+        _checks.Add((x) =>
         {
             if (x is string xString)
             {
@@ -160,14 +150,19 @@ public class ModelValidationUnit<T> : IValidationUnit
 
     public ModelValidationUnit<T> HasFormat(FormatRulesEnum rules)
     {
-        _checks.Enqueue((x) =>
+        _checks.Add((x) =>
         {
             if (x is string xString)
             {
                 if (rules == FormatRulesEnum.Latin)
                 {
                     if (!Regex.IsMatch(xString, @"^[\p{IsBasicLatin}]+$"))
-                        return ValidationErr($"{_paramName}: String must be latin characters only!");
+                        return ValidationErr($"String must be latin characters only!");
+                }
+                if (rules == FormatRulesEnum.IANA)
+                {
+                    if (!Regex.IsMatch(xString, @"([A-Za-z_\-]+\/[A-Za-z_\-]+(?:\/[A-Za-z_\-]+)?)|(?:Etc\/[A-Za-z0-9+\-]+(?:\/[A-Za-z0-9]+)?|(?:CET|CST6CDT|EET|EST|EST5EDT|MET|MST|MST7MDT|PST8PDT|HST))$"))
+                        return ValidationErr($"Must be valid IANA code!");
                 }
             }
 
@@ -181,7 +176,7 @@ public class ModelValidationUnit<T> : IValidationUnit
         => $"Value should not have any of: {String.Join(":", objects)}!";
     public ModelValidationUnit<T> ContainsNone<TParam>(params TParam[] objects)
     {
-        _checks.Enqueue((x) =>
+        _checks.Add((x) =>
         {
             if (x is string xString && objects.Length > 0 && objects[0] is char)
             {
@@ -193,7 +188,7 @@ public class ModelValidationUnit<T> : IValidationUnit
                 }
             }
 
-            if (x is IList xCollection && typeof(TParam) == typeof(object))
+            if (x is IList xCollection)
             {
                 foreach (var obj in objects)
                 {
@@ -217,4 +212,5 @@ public class ModelValidationUnit<T> : IValidationUnit
 public enum FormatRulesEnum
 {
     Latin,
+    IANA
 }
