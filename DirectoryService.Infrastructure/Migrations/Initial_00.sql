@@ -1,42 +1,42 @@
-﻿CREATE TABLE "Departments"
+﻿CREATE TABLE departments
 (
-    "Id" UUID NOT NULL PRIMARY KEY,
-    "Name" VARCHAR(150) NOT NULL,
-    "Identifier" VARCHAR(150) NOT NULL,
-    "ParentId" UUID NULL REFERENCES "Departments"("Id"),
-    "Path" JSONB NOT NULL,
-    "Depth" SMALLINT NOT NULL,
-    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "CreatedAtUtc" TIMESTAMP NOT NULL DEFAULT now(),
-    "UpdatedAtUtc" TIMESTAMP NOT NULL DEFAULT now()
+    id UUID NOT NULL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    identifier VARCHAR(150) NOT NULL,
+    parent_id UUID NULL REFERENCES departments(id),
+    path JSONB NOT NULL,
+    depth SMALLINT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at_utc TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_departments_parentid ON "Departments" ("ParentId");
+CREATE INDEX idx_departments_parent_id ON departments (parent_id);
 
-CREATE TABLE "Position"
+CREATE TABLE position
 (
-    "Id" UUID NOT NULL PRIMARY KEY,
-    "Name" VARCHAR(100) NOT NULL UNIQUE,
-    "Description" VARCHAR(1000) NULL,
-    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "CreatedAtUtc" TIMESTAMP NOT NULL DEFAULT now(),
-    "UpdatedAtUtc" TIMESTAMP NOT NULL DEFAULT now()
+    id UUID NOT NULL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(1000) NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at_utc TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE TABLE "Location"
+CREATE TABLE location
 (
-    "Id" UUID NOT NULL PRIMARY KEY,
-    "Name" JSONB NOT NULL UNIQUE,
-    "Address" VARCHAR(120) NOT NULL UNIQUE,
-    "Description" VARCHAR(1000) NULL,
-    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "CreatedAtUtc" TIMESTAMP NOT NULL DEFAULT now(),
-    "UpdatedAtUtc" TIMESTAMP NOT NULL DEFAULT now()
+    id UUID NOT NULL PRIMARY KEY,
+    name JSONB NOT NULL UNIQUE,
+    address VARCHAR(120) NOT NULL UNIQUE,
+    description VARCHAR(1000) NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at_utc TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at_utc TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE TABLE "DepartmentLocation"
+CREATE TABLE department_location
 (
-    "DepartmentId" UUID NOT NULL REFERENCES "Departments"("Id"),
-    "LocationId" UUID NOT NULL REFERENCES "Location"("Id"),
-    PRIMARY KEY ("DepartmentId", "LocationId")
+    department_id UUID NOT NULL REFERENCES departments(id),
+    location_id UUID NOT NULL REFERENCES location(id),
+    PRIMARY KEY (department_id, location_id)
 );

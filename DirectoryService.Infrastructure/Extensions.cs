@@ -1,7 +1,9 @@
 ﻿using Dapper;
 using DbUp;
+using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Infrastructure.Database;
+using DirectoryService.Infrastructure.Database.Repositories;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Options;
 using Microsoft.Extensions.Configuration;
@@ -16,10 +18,19 @@ public static class Extensions
 {
     public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
     {
-        builder.EnsureDbExists();
-        builder.RegisterJsonbConvertersDapper();
-        builder.AddIDbConnection();
-        builder.AddMigrator();
+        return builder.EnsureDbExists()
+            .RegisterJsonbConvertersDapper()
+            .AddIDbConnection()
+            .AddMigrator()
+            .AddRepositories();
+    }
+
+    private static IHostApplicationBuilder AddRepositories(this IHostApplicationBuilder builder)
+    {
+        builder.Services
+            .AddScoped<IDepartmentRepository, DepartmentRepository>()
+            .AddScoped<ILocationRepository, LocationRepository>()
+            .AddScoped<IPositionRepository, PositionRepository>();
 
         return builder;
     }
@@ -59,13 +70,14 @@ public static class Extensions
     }
 
 
-    private static void EnsureDbExists(this IHostApplicationBuilder builder)
+    private static IHostApplicationBuilder EnsureDbExists(this IHostApplicationBuilder builder)
     {
         var bdOpts = GetConfig(builder);
         EnsureDatabase.For.PostgresqlDatabase(bdOpts.CString);
+        return builder;
     }
 
-    private static void AddMigrator(this IHostApplicationBuilder builder)
+    private static IHostApplicationBuilder AddMigrator(this IHostApplicationBuilder builder)
     {
         var bdOpts = GetConfig(builder);
         var upgrader = DeployChanges.To
@@ -89,13 +101,16 @@ public static class Extensions
         Console.WriteLine("Migrations success!");
         Console.ResetColor();
 
+        return builder;
     }
 
-    private static void AddIDbConnection(this IHostApplicationBuilder builder)
+    private static IHostApplicationBuilder AddIDbConnection(this IHostApplicationBuilder builder)
     {
         var bdOpts = GetConfig(builder);
 
         builder.Services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(bdOpts.CString));
+        return builder;
+
     }
 
     private static OptionsPostgresql GetConfig(IHostApplicationBuilder builder) => builder.Configuration

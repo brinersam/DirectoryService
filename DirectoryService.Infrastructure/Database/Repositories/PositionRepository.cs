@@ -1,11 +1,12 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
+using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Shared.ErrorClasses;
 using System.Data;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
-public class PositionRepository
+public class PositionRepository : IPositionRepository
 {
     private readonly IDbConnection _connection;
 
@@ -16,7 +17,7 @@ public class PositionRepository
 
     public async Task<Result<Position, Error>> GetPositionAsync(Guid id)
     {
-        var sql = $"SELECT * FROM {DbTables.Positions} WHERE Id = @Id";
+        var sql = $"SELECT * FROM {DbTables.Positions} WHERE id = @Id";
 
         var result = await _connection.QuerySingleOrDefaultAsync<Position>(sql, new { Id = id });
         if (result is null)
@@ -28,9 +29,9 @@ public class PositionRepository
     public async Task<UnitResult<Error>> AddPositionAsync(Position position)
     {
         var sql = @$"INSERT INTO {DbTables.Positions} 
-                    (Id, Name, Description, IsActive, CreatedAtUtc, UpdatedAtUtc) 
-                    VALUES 
-                    (@Id, @Name, @Description, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
+					(id, name, description, is_active, created_at_utc, updated_at_utc) 
+					VALUES 
+					(@Id, @Name, @Description, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
         var rowsaffected = await _connection.ExecuteAsync(sql, position);
         if (rowsaffected <= 0)
@@ -42,11 +43,11 @@ public class PositionRepository
     public async Task<UnitResult<Error>> UpdatePositionAsync(Position position)
     {
         var sql = @$"UPDATE {DbTables.Positions} SET
-                    Name = @Name,
-                    Description = @Description,
-                    IsActive = @IsActive,
-                    UpdatedAtUtc = @UpdatedAtUtc
-                    WHERE Id = @Id";
+					name = @Name,
+					description = @Description,
+					is_active = @IsActive,
+					updated_at_utc = @UpdatedAtUtc
+					WHERE id = @Id";
 
         var rowsaffected = await _connection.ExecuteAsync(sql, position);
         if (rowsaffected <= 0)

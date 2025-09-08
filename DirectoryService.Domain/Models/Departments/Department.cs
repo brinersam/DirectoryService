@@ -2,6 +2,7 @@
 using DirectoryService.Domain.Models.Departments.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
+using System.Text.Json.Serialization;
 
 namespace DirectoryService.Domain.Models.Departments;
 public class Department
@@ -23,6 +24,9 @@ public class Department
     public DateTime CreatedAtUtc { get; private set; }
 
     public DateTime UpdatedAtUtc { get; private set; }
+
+    [JsonConstructor]
+    private Department() { }
 
     private Department(
         Guid id,

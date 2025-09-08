@@ -2,12 +2,14 @@
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Validator;
+using System.Text.Json.Serialization;
 
 namespace DirectoryService.Domain.Models.Locations.ValueObject;
 public class LocationName : IJsonbObject
 {
     public string Value { get; init; }
 
+    [JsonConstructor]
     private LocationName(string value)
     {
         Value = value;

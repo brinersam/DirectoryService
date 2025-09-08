@@ -2,15 +2,17 @@
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Validator;
+using System.Text.Json.Serialization;
 
 namespace DirectoryService.Domain.Models.Departments.ValueObject;
 public class DepartmentPath : IJsonbObject
 {
     public string Value { get; init; }
 
-    private DepartmentPath(string path)
+    [JsonConstructor]
+    private DepartmentPath(string value)
     {
-        Value = path;
+        Value = value;
     }
 
     public static Result<DepartmentPath, List<Error>> Create(string path)

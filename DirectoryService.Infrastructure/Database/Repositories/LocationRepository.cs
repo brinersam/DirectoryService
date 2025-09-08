@@ -1,11 +1,12 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
+using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Locations;
 using DirectoryService.Shared.ErrorClasses;
 using System.Data;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
-public class LocationRepository
+public class LocationRepository : ILocationRepository
 {
     private readonly IDbConnection _connection;
 
@@ -16,7 +17,7 @@ public class LocationRepository
 
     public async Task<Result<Location, Error>> GetLocationAsync(Guid id)
     {
-        var sql = $"SELECT * FROM {DbTables.Locations} WHERE Id = @Id";
+        var sql = $"SELECT * FROM {DbTables.Locations} WHERE id = @Id";
 
         var result = await _connection.QuerySingleOrDefaultAsync<Location>(sql, new { Id = id });
         if (result is null)
@@ -28,9 +29,9 @@ public class LocationRepository
     public async Task<UnitResult<Error>> AddLocationAsync(Location location)
     {
         var sql = @$"INSERT INTO {DbTables.Locations} 
-                    (Id, Name, Address, Timezone, IsActive, CreatedAt, UpdatedAt) 
-                    VALUES 
-                    (@Id, @Name, @Address, @Timezone, @IsActive, @CreatedAt, @UpdatedAt)";
+					(id, name, address, timezone, is_active, created_at_utc, updated_at_utc) 
+					VALUES 
+					(@Id, @Name, @Address, @Timezone, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
         var rowsaffected = await _connection.ExecuteAsync(sql, location);
         if (rowsaffected <= 0)
@@ -42,12 +43,12 @@ public class LocationRepository
     public async Task<UnitResult<Error>> UpdateLocationAsync(Location location)
     {
         var sql = @$"UPDATE {DbTables.Locations} SET
-                    Name = @Name,
-                    Address = @Address,
-                    Timezone = @Timezone,
-                    IsActive = @IsActive,
-                    UpdatedAt = @UpdatedAt
-                    WHERE Id = @Id";
+					name = @Name,
+					address = @Address,
+					timezone = @Timezone,
+					is_active = @IsActive,
+					updated_at_utc = @UpdatedAtUtc
+					WHERE id = @Id";
 
         var rowsaffected = await _connection.ExecuteAsync(sql, location);
         if (rowsaffected <= 0)

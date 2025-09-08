@@ -2,6 +2,7 @@
 using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
+using System.Text.Json.Serialization;
 
 namespace DirectoryService.Domain.Models.Locations;
 public class Location
@@ -19,6 +20,9 @@ public class Location
     public DateTime CreatedAt { get; private set; }
 
     public DateTime UpdatedAt { get; private set; }
+
+    [JsonConstructor]
+    private Location() { }
 
     private Location(Guid id, LocationName name, string address, string timezone, bool isActive, DateTime createdAt, DateTime updatedAt)
     {

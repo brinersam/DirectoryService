@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
+using System.Text.Json.Serialization;
 
 namespace DirectoryService.Domain.Models;
 public class Position
@@ -16,6 +17,9 @@ public class Position
     public DateTime CreatedAtUtc { get; private set; }
 
     public DateTime UpdatedAtUtc { get; private set; }
+
+    [JsonConstructor]
+    private Position() { }
 
     private Position(Guid id, string name, string? description, bool isActive, DateTime createdAt, DateTime updatedAt)
     {

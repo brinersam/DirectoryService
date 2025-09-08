@@ -1,11 +1,12 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
+using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
 using System.Data;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
-public class DepartmentRepository
+public class DepartmentRepository : IDepartmentRepository
 {
     private readonly IDbConnection _connection;
 
@@ -16,7 +17,7 @@ public class DepartmentRepository
 
     public async Task<Result<Department, Error>> GetDepartmentAsync(Guid id)
     {
-        var sql = $"SELECT * FROM {DbTables.Departments} WHERE Id = @Id";
+        var sql = $"SELECT * FROM {DbTables.Departments} WHERE id = @Id";
 
         var result = await _connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
         if (result is null)
@@ -27,10 +28,10 @@ public class DepartmentRepository
 
     public async Task<UnitResult<Error>> AddDepartmentAsync(Department department)
     {
-        var sql = @$"INSERT INTO {DbTables.Departments} 
-                    (Id, Name, Identifier, ParentId, Path, Depth, IsActive, CreatedAtUtc, UpdatedAtUtc) 
-                    VALUES 
-                    (@Id, @Name, @Identifier, @ParentId, @Path, @Depth, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
+        var sql = @$"INSERT INTO departments
+					(id, name, identifier, parent_id, path, depth, is_active, created_at_utc, updated_at_utc) 
+					VALUES 
+					(@Id, @Name, @Identifier, @ParentId, @Path, @Depth, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
         var rowsaffected = await _connection.ExecuteAsync(sql, department);
         if (rowsaffected <= 0)
@@ -42,14 +43,14 @@ public class DepartmentRepository
     public async Task<UnitResult<Error>> UpdateDepartmentAsync(Department department)
     {
         var sql = $@"UPDATE {DbTables.Departments} SET
-                Name = @Name,
-                Identifier = @Identifier,
-                ParentId = @ParentId,
-                Path = @Path,
-                Depth = @Depth,
-                IsActive = @IsActive,
-                UpdatedAtUtc = @UpdatedAtUtc
-            WHERE Id = @Id";
+				name = @Name,
+				identifier = @Identifier,
+				parent_id = @ParentId,
+				path = @Path,
+				depth = @Depth,
+				is_active = @IsActive,
+				updated_at_utc = @UpdatedAtUtc
+			WHERE id = @Id";
 
         var rowsaffected = await _connection.ExecuteAsync(sql, department);
         if (rowsaffected <= 0)
