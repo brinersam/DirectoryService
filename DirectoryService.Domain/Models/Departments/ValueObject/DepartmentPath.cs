@@ -3,7 +3,7 @@ using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Validator;
 
-namespace DirectoryService.Domain.Models.M_Department.ValueObject;
+namespace DirectoryService.Domain.Models.Departments.ValueObject;
 public class DepartmentPath : IJsonbObject
 {
     public string Value { get; init; }
@@ -13,7 +13,7 @@ public class DepartmentPath : IJsonbObject
         Value = path;
     }
 
-    public static Result<DepartmentPath, List<Error>>Create(string path)
+    public static Result<DepartmentPath, List<Error>> Create(string path)
     {
         var validator = new ModelValidator();
         validator.Validate(path)

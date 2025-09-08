@@ -9,7 +9,7 @@ public class ModelValidator
     private readonly List<IValidationUnit> _validationOptions = new();
 
     public ModelValidator()
-    {}
+    { }
 
     public ModelValidationUnit<T> Validate<T>(
         T value,
@@ -25,7 +25,7 @@ public class ModelValidator
     {
         var errors = new List<List<Error>>();
 
-        foreach(var unit in _validationOptions)
+        foreach (var unit in _validationOptions)
         {
             var valueErrors = unit.Validate();
             if (valueErrors.Count > 0)
@@ -44,7 +44,7 @@ internal interface IValidationUnit
 }
 
 public class ModelValidationUnit<T> : IValidationUnit
-    where T: class
+    where T : class
 {
     private readonly T _value;
     private readonly string _paramName;

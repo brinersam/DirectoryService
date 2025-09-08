@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-namespace DirectoryService.Shared.ErrorClasses;
+﻿namespace DirectoryService.Shared.ErrorClasses;
 
 public static class Errors
 {
@@ -12,6 +10,10 @@ public static class Errors
 
             return Error.Validation($"Value {valueName} of type {typeof(T).Name} cannot be {emptyOrNull}!");
         }
+
+        public static Error DBRowsAffectedError<T>(int affectedRows, int expectedRows) =>
+            Error.Failure
+            ($"Failure during DB operation with type {typeof(T)}. Rolls affected/expected: {affectedRows}/{expectedRows}");
 
         public static Error ValueIsInvalid<T>(T value, string valueName) =>
             Error.Validation

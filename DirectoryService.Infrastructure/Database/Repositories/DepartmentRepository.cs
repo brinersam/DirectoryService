@@ -1,6 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
-using DirectoryService.Domain.Models.M_Department;
+using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
 using System.Data;
 
@@ -18,7 +18,7 @@ public class DepartmentRepository
     {
         var sql = $"SELECT * FROM {DbTables.Departments} WHERE Id = @Id";
 
-        var result = await _connection.QuerySingleOrDefaultAsync<Department>(sql, new {Id = id});
+        var result = await _connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
         if (result is null)
             return Errors.General.NotFound(typeof(Department));
 

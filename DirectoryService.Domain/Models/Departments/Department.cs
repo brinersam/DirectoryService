@@ -1,9 +1,9 @@
 ﻿using CSharpFunctionalExtensions;
-using DirectoryService.Domain.Models.M_Department.ValueObject;
+using DirectoryService.Domain.Models.Departments.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
 
-namespace DirectoryService.Domain.Models.M_Department;
+namespace DirectoryService.Domain.Models.Departments;
 public class Department
 {
     public Guid Id { get; init; }
