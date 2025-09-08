@@ -3,13 +3,13 @@
     "Id" UUID NOT NULL PRIMARY KEY,
     "Name" VARCHAR(150) NOT NULL,
     "Identifier" VARCHAR(150) NOT NULL,
-    "ParentId" UUID NULL FOREIGN KEY REFERENCES "Departments"("Id"),
+    "ParentId" UUID NULL REFERENCES "Departments"("Id"),
     "Path" JSONB NOT NULL,
     "Depth" SMALLINT NOT NULL,
     "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
     "CreatedAtUtc" TIMESTAMP NOT NULL DEFAULT now(),
     "UpdatedAtUtc" TIMESTAMP NOT NULL DEFAULT now()
-)
+);
 
 CREATE INDEX idx_departments_parentid ON "Departments" ("ParentId");
 
@@ -21,7 +21,7 @@ CREATE TABLE "Position"
     "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
     "CreatedAtUtc" TIMESTAMP NOT NULL DEFAULT now(),
     "UpdatedAtUtc" TIMESTAMP NOT NULL DEFAULT now()
-)
+);
 
 CREATE TABLE "Location"
 (
@@ -32,4 +32,11 @@ CREATE TABLE "Location"
     "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
     "CreatedAtUtc" TIMESTAMP NOT NULL DEFAULT now(),
     "UpdatedAtUtc" TIMESTAMP NOT NULL DEFAULT now()
-)
+);
+
+CREATE TABLE "DepartmentLocation"
+(
+    "DepartmentId" UUID NOT NULL REFERENCES "Departments"("Id"),
+    "LocationId" UUID NOT NULL REFERENCES "Location"("Id"),
+    PRIMARY KEY ("DepartmentId", "LocationId")
+);

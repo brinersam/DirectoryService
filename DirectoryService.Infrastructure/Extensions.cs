@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using DbUp;
+using DirectoryService.Domain.Models;
 using DirectoryService.Infrastructure.Database;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Options;
@@ -25,10 +26,11 @@ public static class Extensions
 
     private static IHostApplicationBuilder RegisterJsonbConvertersDapper(this IHostApplicationBuilder builder)
     {
-        var types = typeof(Extensions).Assembly
+        var types = typeof(Position).Assembly
             .DefinedTypes
             .Where(type => type is { IsAbstract: false, IsInterface: false }
-                        && type.IsAssignableTo(typeof(IJsonbObject)));
+                        && type.IsAssignableTo(typeof(IJsonbObject)))
+            .ToList();
 
         var addTypeHandler = typeof(SqlMapper)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
