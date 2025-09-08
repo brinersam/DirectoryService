@@ -6,15 +6,15 @@ namespace DirectoryService.Domain.Models;
 public class Position
 {
     public Guid Id { get; private set; }
-    
+
     public string Name { get; private set; }
-    
+
     public string? Description { get; private set; }
-    
+
     public bool IsActive { get; private set; }
-    
+
     public DateTime CreatedAtUtc { get; private set; }
-    
+
     public DateTime UpdatedAtUtc { get; private set; }
 
     private Position(Guid id, string name, string? description, bool isActive, DateTime createdAt, DateTime updatedAt)

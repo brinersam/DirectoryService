@@ -1,8 +1,9 @@
 ﻿using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Models.M_Department.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
 
-namespace DirectoryService.Domain.Models;
+namespace DirectoryService.Domain.Models.M_Department;
 public class Department
 {
     public Guid Id { get; init; }
@@ -13,7 +14,7 @@ public class Department
 
     public Guid? ParentId { get; private set; }
 
-    public string Path { get; private set; }
+    public DepartmentPath Path { get; private set; }
 
     public short Depth { get; private set; }
 
@@ -28,7 +29,7 @@ public class Department
         string name,
         string identifier,
         Guid? parentId,
-        string path,
+        DepartmentPath path,
         short depth)
     {
         Id = id;
@@ -45,7 +46,7 @@ public class Department
     public static Result<Department, List<Error>> Create(
         string name,
         string identifier,
-        string path,
+        DepartmentPath path,
         short depth,
         Guid? parentId = null)
     {
@@ -61,9 +62,6 @@ public class Department
             .MinLength(3)
             .MaxLength(150)
             .HasFormat(FormatRulesEnum.Latin);
-
-        validator.Validate(path)
-            .ContainsNone(' ');
 
         var validationResult = validator.ValidateAll(out bool isError);
 
