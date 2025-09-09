@@ -1,4 +1,5 @@
 ﻿using DirectoryService.Infrastructure;
+using DirectoryService.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
 builder.AddInfrastructure();
+builder.AddPresentation();
 
 
 builder.Services.AddEndpointsApiExplorer();
