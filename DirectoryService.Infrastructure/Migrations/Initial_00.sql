@@ -13,7 +13,7 @@
 
 CREATE INDEX idx_departments_parent_id ON departments (parent_id);
 
-CREATE TABLE position
+CREATE TABLE positions
 (
     id UUID NOT NULL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -23,12 +23,12 @@ CREATE TABLE position
     updated_at_utc TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE TABLE location
+CREATE TABLE locations
 (
     id UUID NOT NULL PRIMARY KEY,
     name JSONB NOT NULL UNIQUE,
-    address VARCHAR(120) NOT NULL UNIQUE,
-    description VARCHAR(1000) NULL,
+    address VARCHAR(120) NOT NULL,
+    timezone VARCHAR(300) NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at_utc TIMESTAMP NOT NULL DEFAULT now(),
     updated_at_utc TIMESTAMP NOT NULL DEFAULT now()
@@ -37,6 +37,6 @@ CREATE TABLE location
 CREATE TABLE department_location
 (
     department_id UUID NOT NULL REFERENCES departments(id),
-    location_id UUID NOT NULL REFERENCES location(id),
+    location_id UUID NOT NULL REFERENCES locations(id),
     PRIMARY KEY (department_id, location_id)
 );

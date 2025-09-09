@@ -17,22 +17,22 @@ public class Location
 
     public bool IsActive { get; private set; }
 
-    public DateTime CreatedAt { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
 
-    public DateTime UpdatedAt { get; private set; }
+    public DateTime UpdatedAtUtc { get; private set; }
 
     [JsonConstructor]
     private Location() { }
 
-    private Location(Guid id, LocationName name, string address, string timezone, bool isActive, DateTime createdAt, DateTime updatedAt)
+    private Location(Guid id, LocationName name, string address, string timezone, bool isActive, DateTime createdAtUtc, DateTime updatedAtUtc)
     {
         Id = id;
         Name = name;
         Address = address;
         Timezone = timezone;
         IsActive = isActive;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
+        CreatedAtUtc = createdAtUtc;
+        UpdatedAtUtc = updatedAtUtc;
     }
 
     public static Result<Location, List<Error>> Create(LocationName name, string address, string timezone)
@@ -54,8 +54,8 @@ public class Location
             address,
             timezone,
             isActive: true,
-            createdAt: now,
-            updatedAt: now
+            createdAtUtc: now,
+            updatedAtUtc: now
         );
     }
 }

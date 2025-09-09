@@ -24,8 +24,8 @@ public class Error
     public static Error NotFound(string message) =>
          new Error("value.not.found", message, ErrorType.NotFound);
 
-    public static Error Failure(string message) =>
-         new Error("failure", message, ErrorType.Failure);
+    public static Error Failure(string message, string code = "failure") =>
+         new Error(code, message, ErrorType.Failure);
 }
 
 public enum ErrorType

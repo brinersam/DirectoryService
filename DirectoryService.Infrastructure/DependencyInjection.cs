@@ -14,7 +14,7 @@ using System.Data;
 using System.Reflection;
 
 namespace DirectoryService.Infrastructure;
-public static class Extensions
+public static class DependencyInjection
 {
     public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
     {
