@@ -1,19 +1,30 @@
 ﻿using CSharpFunctionalExtensions;
+using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
+using System.Text.Json.Serialization;
 
-namespace DirectoryService.Domain.Models;
+namespace DirectoryService.Domain.Models.Locations;
 public class Location
 {
     public Guid Id { get; private set; }
-    public string Name { get; private set; }
+
+    public LocationName Name { get; private set; }
+
     public string Address { get; private set; }
+
     public string Timezone { get; private set; }
+
     public bool IsActive { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
+
     public DateTime UpdatedAt { get; private set; }
 
-    private Location(Guid id, string name, string address, string timezone, bool isActive, DateTime createdAt, DateTime updatedAt)
+    [JsonConstructor]
+    private Location() { }
+
+    private Location(Guid id, LocationName name, string address, string timezone, bool isActive, DateTime createdAt, DateTime updatedAt)
     {
         Id = id;
         Name = name;
@@ -24,13 +35,9 @@ public class Location
         UpdatedAt = updatedAt;
     }
 
-    public static Result<Location, List<Error>> Create(string name, string address, string timezone)
+    public static Result<Location, List<Error>> Create(LocationName name, string address, string timezone)
     {
         var validator = new ModelValidator();
-
-        validator.Validate(name)
-            .MinLength(3)
-            .MaxLength(120);
 
         validator.Validate(timezone)
             .HasFormat(FormatRulesEnum.IANA);
