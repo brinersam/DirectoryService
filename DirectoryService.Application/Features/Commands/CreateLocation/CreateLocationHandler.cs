@@ -39,6 +39,14 @@ public class CreateLocationHandler
         if (createLocation.IsFailure)
             return createLocation.Error;
 
+        var existingLocation = await _repository.GetLocationAsync(
+            address: createLocation.Value.Address,
+            locationName: createLocation.Value.Name,
+            ct: ct);
+
+        if (existingLocation.IsSuccess)
+            return new[] { Error.Failure($"Can not add duplicate location with name [{createLocation.Value.Name.Value}]") };
+
         var result = await _repository.AddLocationAsync(createLocation.Value, ct);
         if (result.IsFailure)
             return new[]{ result.Error };

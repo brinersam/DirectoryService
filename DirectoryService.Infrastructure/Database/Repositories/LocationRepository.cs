@@ -2,8 +2,11 @@
 using Dapper;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Locations;
+using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using System.Data;
+using System.Text;
+using System.Text.Json;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class LocationRepository : ILocationRepository
@@ -15,11 +18,38 @@ public class LocationRepository : ILocationRepository
         _connection = connection;
     }
 
-    public async Task<Result<Location, Error>> GetLocationAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<Location, Error>> GetLocationAsync(
+        Guid? id = null,
+        string? address = null,
+        LocationName? locationName = null,
+        CancellationToken ct = default)
     {
-        var sql = $"SELECT * FROM {DbTables.Locations} WHERE id = @Id";
+        var sql = new StringBuilder($"SELECT * FROM {DbTables.Locations} WHERE 1=1");
+        var parameters = new DynamicParameters();
 
-        var cmd = new CommandDefinition(sql, new { Id = id }, cancellationToken: ct);
+        if (id is null && address is null && locationName is null)
+            throw new ArgumentNullException("All arguments are null!");
+
+        if (id.HasValue)
+        {
+            sql.Append(" AND id = @Id");
+            parameters.Add("Id", id.Value);
+        }
+
+        if (!string.IsNullOrEmpty(address))
+        {
+            sql.Append(" AND address = @Address");
+            parameters.Add("Address", address);
+        }
+
+        if (locationName is not null)
+        {
+            var json = JsonSerializer.Serialize(locationName);
+            sql.Append(" AND name = @LocationName::jsonb");
+            parameters.Add("LocationName", json);
+        }
+
+        var cmd = new CommandDefinition(sql.ToString(), parameters, cancellationToken: ct);
 
         var result = await _connection.QuerySingleOrDefaultAsync<Location>(cmd);
         if (result is null)
@@ -30,12 +60,6 @@ public class LocationRepository : ILocationRepository
 
     public async Task<UnitResult<Error>> AddLocationAsync(Location location, CancellationToken ct = default)
     {
-        var validationSql = $@"SELECT name FROM {DbTables.Locations} WHERE name = @Name";
-        var validationCmd = new CommandDefinition(validationSql, new {Name = location.Name}, cancellationToken: ct);
-        var existingRecord = await _connection.QuerySingleOrDefaultAsync<Location>(validationCmd);
-        if (existingRecord is not null)
-            return Error.Failure($"Can not add duplicate location with name [{location.Name.Value}]");
-
         var sql = @$"INSERT INTO {DbTables.Locations} 
 					(id, name, address, timezone, is_active, created_at_utc, updated_at_utc) 
 					VALUES 
