@@ -1,11 +1,13 @@
 ﻿using Dapper;
 using DbUp;
+using DirectoryService.Application.Features.Commands.CreateLocation;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Infrastructure.Database;
 using DirectoryService.Infrastructure.Database.Repositories;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Options;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +24,14 @@ public static class DependencyInjection
             .RegisterJsonbConvertersDapper()
             .AddIDbConnection()
             .AddMigrator()
-            .AddRepositories();
+            .AddRepositories()
+            .RegisterValidators();
+    }
+
+    private static IHostApplicationBuilder RegisterValidators(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddValidatorsFromAssemblyContaining<CreateLocationCommandValidator>();
+        return builder;
     }
 
     private static IHostApplicationBuilder AddRepositories(this IHostApplicationBuilder builder)
