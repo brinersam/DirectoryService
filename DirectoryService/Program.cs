@@ -1,4 +1,5 @@
 ﻿using DirectoryService.Infrastructure;
+using DirectoryService.Middlewares;
 using DirectoryService.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 app.UseAuthorization();
 
