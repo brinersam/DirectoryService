@@ -1,6 +1,7 @@
 ﻿using DirectoryService.Infrastructure;
 using DirectoryService.Middlewares;
 using DirectoryService.Presentation;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,9 +13,13 @@ builder.Services.AddControllers();
 builder.AddInfrastructure();
 builder.AddPresentation();
 
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 
 var app = builder.Build();
 
