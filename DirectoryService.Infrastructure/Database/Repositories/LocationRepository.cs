@@ -4,18 +4,18 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Locations;
 using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
-using System.Data;
+using DirectoryService.Shared.Framework;
 using System.Text;
 using System.Text.Json;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class LocationRepository : ILocationRepository
 {
-    private readonly IDbConnection _connection;
+    private readonly AppDb _db;
 
-    public LocationRepository(IDbConnection connection)
+    public LocationRepository(AppDb connection)
     {
-        _connection = connection;
+        _db = connection;
     }
 
     public async Task<Result<Location, Error>> GetLocationAsync(
@@ -49,9 +49,9 @@ public class LocationRepository : ILocationRepository
             parameters.Add("LocationName", json);
         }
 
-        var cmd = new CommandDefinition(sql.ToString(), parameters, cancellationToken: ct);
+        var cmd = new CommandDefinition(sql.ToString(), parameters, _db.Transaction, cancellationToken: ct);
 
-        var result = await _connection.QuerySingleOrDefaultAsync<Location>(cmd);
+        var result = await _db.Connection.QuerySingleOrDefaultAsync<Location>(cmd);
         if (result is null)
             return Errors.General.NotFound(typeof(Location));
 
@@ -65,9 +65,9 @@ public class LocationRepository : ILocationRepository
 					VALUES 
 					(@Id, @Name, @Address, @Timezone, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
-        var cmd = new CommandDefinition(sql, location, cancellationToken: ct);
+        var cmd = new CommandDefinition(sql, location, _db.Transaction, cancellationToken: ct);
 
-        var rowsaffected = await _connection.ExecuteAsync(cmd);
+        var rowsaffected = await _db.Connection.ExecuteAsync(cmd);
         if (rowsaffected <= 0)
             return Errors.General.DBRowsAffectedError<Location>(rowsaffected, 1);
 
@@ -84,9 +84,9 @@ public class LocationRepository : ILocationRepository
 					updated_at_utc = @UpdatedAtUtc
 					WHERE id = @Id";
 
-        var cmd = new CommandDefinition(sql, location, cancellationToken: ct);
+        var cmd = new CommandDefinition(sql, location, _db.Transaction, cancellationToken: ct);
 
-        var rowsaffected = await _connection.ExecuteAsync(cmd);
+        var rowsaffected = await _db.Connection.ExecuteAsync(cmd);
         if (rowsaffected <= 0)
             return Errors.General.DBRowsAffectedError<Location>(rowsaffected, 1);
 

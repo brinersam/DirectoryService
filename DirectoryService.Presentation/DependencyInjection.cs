@@ -1,4 +1,6 @@
-﻿using DirectoryService.Application.Features.Commands.CreateLocation;
+﻿using DirectoryService.Application.Features.Commands.CreateDepartment;
+using DirectoryService.Application.Features.Commands.CreateLocation;
+using DirectoryService.Application.Features.Commands.CreatePosition;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -8,6 +10,8 @@ public static class DependencyInjection
     public static IHostApplicationBuilder AddPresentation(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<CreateLocationHandler>();
+        builder.Services.AddScoped<CreateDepartmentHandler>();
+        builder.Services.AddScoped<CreatePositionHandler>();
         return builder;
     }
 

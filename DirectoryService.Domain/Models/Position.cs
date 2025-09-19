@@ -18,10 +18,15 @@ public class Position
 
     public DateTime UpdatedAtUtc { get; private set; }
 
+    public IReadOnlyList<Guid> DepartmentIds => _departmentIds.AsReadOnly();
+
+    private List<Guid> _departmentIds = [];
+
     [JsonConstructor]
     private Position() { }
 
-    private Position(Guid id, string name, string? description, bool isActive, DateTime createdAt, DateTime updatedAt)
+    // dont use outside of db reads
+    public Position(Guid id, string name, string? description, bool isActive, DateTime createdAt, DateTime updatedAt, IEnumerable<Guid> departmentIds)
     {
         Id = id;
         Name = name;
@@ -29,9 +34,10 @@ public class Position
         IsActive = isActive;
         CreatedAtUtc = createdAt;
         UpdatedAtUtc = updatedAt;
+        _departmentIds = departmentIds.ToList();
     }
 
-    public static Result<Position, List<Error>> Create(string name, string? description = null)
+    public static Result<Position, List<Error>> Create(string name, IEnumerable<Guid> departmentIds, string? description = null)
     {
         var validator = new ModelValidator();
 
@@ -54,7 +60,8 @@ public class Position
             description,
             isActive: true,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            departmentIds: departmentIds
         );
     }
 }
