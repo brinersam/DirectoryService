@@ -19,7 +19,7 @@ public class LocationName : IJsonbObject
     {
         var validator = new ModelValidator();
 
-        validator.Validate(value)
+        validator.Validate(value, "Location name")
             .MinLength(3)
             .MaxLength(120);
 
