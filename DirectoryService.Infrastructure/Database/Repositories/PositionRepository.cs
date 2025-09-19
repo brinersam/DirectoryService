@@ -6,7 +6,6 @@ using DirectoryService.Infrastructure.Database.Datamodels;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework;
 using System.Data;
-using System.Data.Common;
 using System.Text;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
@@ -50,9 +49,21 @@ public class PositionRepository : IPositionRepository
 
         var cmd = new CommandDefinition(sql.ToString(), parameters, transaction: _db.Transaction, cancellationToken: ct);
 
-        var result = await _db.Connection.QuerySingleOrDefaultAsync<Position>(sql, new { Id = id });
-        if (result is null)
+        var dataModel = await _db.Connection.QuerySingleOrDefaultAsync<PositionDataModel>(cmd);
+        if (dataModel is null)
             return Errors.General.NotFound(typeof(Position));
+        var departmentGuids = await GetRelatedDepartmentIds(dataModel.Id, ct);
+
+        var result = new Position
+        (
+            dataModel.Id,
+            dataModel.Name,
+            dataModel.Description,
+            dataModel.IsActive,
+            dataModel.CreatedAtUtc,
+            dataModel.UpdatedAtUtc,
+            departmentGuids
+        );
 
         return result;
     }
@@ -73,12 +84,17 @@ public class PositionRepository : IPositionRepository
 
         var cmd = new CommandDefinition(sql, position, _db.Transaction, cancellationToken: ct);
 
+        using var transaction = _db.OpenTransactionIfNotOngoing();
 
         var rowsaffected = await _db.Connection.ExecuteAsync(cmd);
         if (rowsaffected <= 0)
             return Errors.General.DBRowsAffectedError<Position>(rowsaffected, 1);
 
+        var synced = await SyncPositionWithDepartments(position, ct);
+        if (synced.IsFailure)
+            return synced.Error;
 
+        transaction.Commit();
 
         return Result.Success<Error>();
     }
@@ -92,6 +108,7 @@ public class PositionRepository : IPositionRepository
 					updated_at_utc = @UpdatedAtUtc
 					WHERE id = @Id";
 
+        using var transaction = _db.OpenTransactionIfNotOngoing();
 
         var cmd = new CommandDefinition(sql, position, _db.Transaction, cancellationToken: ct);
 
@@ -99,7 +116,66 @@ public class PositionRepository : IPositionRepository
         if (rowsaffected <= 0)
             return Errors.General.DBRowsAffectedError<Position>(rowsaffected, 1);
 
+        var synced = await SyncPositionWithDepartments(position, ct);
+        if (synced.IsFailure)
+            return synced.Error;
+
+        transaction.Commit();
 
         return Result.Success<Error>();
+    }
+
+    public async Task<UnitResult<Error>> SyncPositionWithDepartments(Position position, CancellationToken ct = default)
+    {
+        var dbDepartmentIds = await GetRelatedDepartmentIds(position.Id, ct);
+
+        var departmentsRelationsToDelete = dbDepartmentIds.Where(x => position.DepartmentIds.Contains(x) is false).ToArray();
+        var departmentsRelationsToAdd = position.DepartmentIds.Where(x => dbDepartmentIds.Contains(x) is false).ToArray();
+
+        if (!departmentsRelationsToAdd.Any() && !departmentsRelationsToDelete.Any())
+            return Result.Success<Error>();
+
+        var parameters = new DynamicParameters();
+        parameters.Add("PositionId", position.Id);
+
+        var sql = new StringBuilder();
+
+        var sqlCmds = new List<string>();
+        if (departmentsRelationsToDelete.Any())
+            sqlCmds.Add(CreateDeleteSql(departmentsRelationsToDelete, parameters));
+
+        if (departmentsRelationsToAdd.Any())
+            sqlCmds.Add(CreateInsertSql(departmentsRelationsToAdd, parameters));
+
+        sql.Append(String.Join(';', sqlCmds));
+        sql.Append(";");
+
+        var cmd = new CommandDefinition(sql.ToString(), parameters, transaction: _db.Transaction, cancellationToken: ct);
+
+        var rowsAffected = await _db.Connection.ExecuteAsync(cmd);
+        var expectedAffected = departmentsRelationsToDelete.Length + departmentsRelationsToAdd.Length;
+        if (rowsAffected != expectedAffected)
+            return Errors.General.DBRowsAffectedError<Position>(rowsAffected, expectedAffected);
+
+        return Result.Success<Error>();
+    }
+
+    private static string CreateInsertSql(Guid[] departmentsRelationsToAdd, DynamicParameters parameters)
+    {
+        var sql = new StringBuilder($"INSERT INTO {DbTables.Departments_Positions} (position_id, department_id) VALUES");
+        var sqlValues = new string[departmentsRelationsToAdd.Length];
+        for (int i = 0; i < departmentsRelationsToAdd.Length; i++)
+        {
+            sqlValues[i] = $" (@PositionId, @DepartmentId{i})";
+            parameters.Add($"DepartmentId{i}", departmentsRelationsToAdd[i]);
+        }
+        sql.Append(String.Join(',', sqlValues));
+        return sql.ToString();
+    }
+
+    private static string CreateDeleteSql(Guid[] departmentsRelationsToDelete, DynamicParameters parameters)
+    {
+        parameters.Add("ToDelete", departmentsRelationsToDelete);
+        return $"DELETE FROM {DbTables.Departments_Positions} WHERE position_id = @PositionId AND department_id = ANY(@ToDelete)";
     }
 }

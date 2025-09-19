@@ -9,6 +9,7 @@ public interface IPositionRepository
 
     Task<Result<Position, Error>> GetPositionAsync(Guid? id = null, string name = "", bool active = true, CancellationToken ct = default);
 
+    Task<UnitResult<Error>> SyncPositionWithDepartments (Position position, CancellationToken ct = default);
 
     Task<UnitResult<Error>> UpdatePositionAsync(Position position, CancellationToken ct = default);
 }
