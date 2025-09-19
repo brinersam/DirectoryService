@@ -8,6 +8,7 @@ public static class DependencyInjection
     public static IHostApplicationBuilder AddPresentation(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<CreateLocationHandler>();
+        builder.Services.AddScoped<CreateDepartmentHandler>();
         return builder;
     }
 

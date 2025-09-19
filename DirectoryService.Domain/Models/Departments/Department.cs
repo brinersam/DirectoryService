@@ -65,6 +65,7 @@ public class Department
             .NotNullOrEmpty()
             .MinLength(3)
             .MaxLength(150)
+            .ContainsNone(' ')
             .HasFormat(FormatRulesEnum.Latin);
 
         var validationResult = validator.ValidateAll(out bool isError);
