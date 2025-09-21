@@ -1,19 +1,22 @@
-﻿using System.Data;
+﻿using CSharpFunctionalExtensions;
+using DirectoryService.Shared.ErrorClasses;
+using DirectoryService.Shared.Framework.DbConnection;
+using System.Data;
 using IsolationLevel = System.Data.IsolationLevel;
 
 namespace DirectoryService.Shared.Framework;
 
-public class NullObjectDbTransaction : IDbTransaction, IDisposable
+public class NullObjectDbTransaction : IDbResultTransaction, IDisposable
 {
-    private readonly IDbTransaction Transaction;
+    private readonly IDbTransaction _transaction;
 
-    public IDbConnection? Connection => Transaction.Connection;
+    public IDbConnection? Connection => _transaction.Connection;
 
-    public IsolationLevel IsolationLevel => Transaction.IsolationLevel;
+    public IsolationLevel IsolationLevel => _transaction.IsolationLevel;
 
     public NullObjectDbTransaction(IDbTransaction original)
     {
-        Transaction = original;
+        _transaction = original;
     }
 
     public void Commit()
@@ -24,4 +27,14 @@ public class NullObjectDbTransaction : IDbTransaction, IDisposable
 
     public void Dispose()
     { }
+
+    public UnitResult<Error> TryCommit()
+    {
+        return Result.Success<Error>();
+    }
+
+    public UnitResult<Error> TryRollback() 
+    {
+        return Result.Success<Error>();
+    }
 }

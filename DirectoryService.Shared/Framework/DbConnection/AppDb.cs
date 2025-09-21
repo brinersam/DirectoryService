@@ -1,9 +1,17 @@
-﻿using System.Data;
+﻿using CSharpFunctionalExtensions;
+using DirectoryService.Shared.ErrorClasses;
+using DirectoryService.Shared.Framework.DbConnection;
+using Microsoft.Extensions.Logging;
+using System.Data;
 using IsolationLevel = System.Data.IsolationLevel;
 
 namespace DirectoryService.Shared.Framework;
 public class AppDb
 {
+    private readonly ILogger<AppDbTransaction> _loggerAppDbTransaction;
+
+    private readonly ILogger<AppDb> _logger;
+
     public IDbConnection Connection { get; init; }
 
     private AppDbTransaction _transactionWrapper;
@@ -16,31 +24,38 @@ public class AppDb
 
     public bool HasIsolationLevel => TransactionIsolationLevel is not null;
 
-    public AppDb(IDbConnection connection)
+    public AppDb(
+        ILogger<AppDbTransaction> loggerAppDbTransaction,
+        ILogger<AppDb> loggerAppDb,
+        IDbConnection connection)
     {
+        _loggerAppDbTransaction = loggerAppDbTransaction;
+        _logger = loggerAppDb;
         Connection = connection;
     }
 
-    public IDbTransaction BeginTransaction()
+    public Result<IDbTransaction,Error> BeginTransaction(IsolationLevel? il = null)
     {
-        if (Transaction is null)
+        try
         {
-            _transactionWrapper = new AppDbTransaction(this);
-            Transaction = _transactionWrapper.Transaction;
+            if (Transaction is null)
+            {
+                if (il is null)
+                    _transactionWrapper = new AppDbTransaction(this, _loggerAppDbTransaction);
+                else
+                    _transactionWrapper = new AppDbTransaction(this, _loggerAppDbTransaction, (IsolationLevel)il);
+
+                Transaction = _transactionWrapper.Transaction;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during transaction beginnign!");
+            return Errors.Database.TransactionError();
         }
 
-        return Transaction;
-    }
-
-    public IDbTransaction BeginTransaction(IsolationLevel il)
-    {
-        if (Transaction is null)
-        {
-            _transactionWrapper = new AppDbTransaction(this, il);
-            Transaction = _transactionWrapper.Transaction;
-        }
-
-        return Transaction;
+        _logger.LogTrace("Transaction begun successfully...");
+        return Result.Success<IDbTransaction, Error>(Transaction);
     }
 
     public void OnTransactionDisposed()
@@ -48,15 +63,19 @@ public class AppDb
         Transaction = null;
     }
 
-    public IDbTransaction OpenTransactionIfNotOngoing()
+    public Result<IDbResultTransaction, Error> OpenTransactionIfNotOngoing()
     {
         if (Transaction is null)
         {
-            BeginTransaction();
+            var openTransactionResult = BeginTransaction();
+            if (openTransactionResult.IsFailure)
+                return openTransactionResult.Error;
+
             return _transactionWrapper;
         }
         else
         {
+            _logger.LogTrace("Opening nullobject transaction...");
             return new NullObjectDbTransaction(Transaction);
         }
     }
