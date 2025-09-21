@@ -1,7 +1,4 @@
-﻿using CSharpFunctionalExtensions;
-using DirectoryService.Application.Interfaces;
-using DirectoryService.Domain.Models;
-using DirectoryService.Shared.ErrorClasses;
+﻿using DirectoryService.Application.Interfaces;
 using FluentValidation;
 
 namespace DirectoryService.Application.Features.Commands.CreatePosition;
@@ -13,20 +10,10 @@ public class CreatePositionCommandValidator : AbstractValidator<CreatePositionCo
     {
         RuleFor(x => x.request.Name)
             .MinimumLength(3)
-            .MaximumLength(100)
-            .MustAsync(async (x,ct) =>
-            {
-                Result<Position, Error> existingPositonRes = await _positionRepository.GetPositionAsync(name: x, ct: ct);
-                return existingPositonRes.IsFailure;
-            });
+            .MaximumLength(100);
 
         RuleFor(x => x.request.DepartmentIds)
             .NotEmpty()
-            .Must(x => x.Distinct().Count() == x.Count())
-            .MustAsync(async (x,ct) => 
-            {
-                var departmentsThatExistAndValid = await _departmentRepository.GetDepartmentsAsync(x, true, ct);
-                return departmentsThatExistAndValid.IsSuccess;
-            });
+            .Must(x => x.Distinct().Count() == x.Count());
     }
 }

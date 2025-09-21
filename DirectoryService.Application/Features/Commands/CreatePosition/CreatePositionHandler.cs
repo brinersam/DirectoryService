@@ -11,6 +11,7 @@ namespace DirectoryService.Application.Features.Commands.CreatePosition;
 public class CreatePositionHandler
 {
     private readonly IValidator<CreatePositionCommand> _cmdValidator;
+    private readonly IDepartmentRepository _repositoryDepartment;
     private readonly AppDb _appDb;
     private readonly IPositionRepository _repositoryPosition;
 
@@ -21,6 +22,7 @@ public class CreatePositionHandler
         IPositionRepository repositoryPosition)
     {
         _cmdValidator = cmdValidator;
+        _repositoryDepartment = repositoryDepartment;
         _appDb = appDb;
         _repositoryPosition = repositoryPosition;
     }
@@ -32,6 +34,22 @@ public class CreatePositionHandler
         var validationResults = await _cmdValidator.ValidateAsync(cmd, ct);
         if (validationResults.IsValid == false)
             return validationResults.Errors.ToAppErrors().ToList();
+
+        var existingPositonRes = await _repositoryPosition.GetPositionAsync(name: cmd.request.Name, ct: ct);
+        if (existingPositonRes.IsSuccess)
+            return new[] {Error.Validation($"Имя позиции [{cmd.request.Name}] уже используется!")};
+
+        var validDepartments = await _repositoryDepartment.GetDepartmentsAsync(cmd.request.DepartmentIds, true, ct);
+        if (validDepartments.IsFailure)
+            return new[] { Error.Validation($"Введенные департаменты не валидны!") };
+
+        var validDepartmentIds = validDepartments.Value.Select(x => x.Id).ToHashSet();
+        var invalidDepartments = cmd.request.DepartmentIds
+            .Where(requestedDepartmentId => validDepartmentIds.Contains(requestedDepartmentId) == false)
+            .ToList();
+
+        if (invalidDepartments.Any())
+            return new[] { Error.Validation($"Введенные департаменты с id : [{String.Join(';', invalidDepartments)}] не валидны!") };
 
         var positionRes = Position.Create(
             cmd.request.Name,
