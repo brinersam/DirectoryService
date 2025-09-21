@@ -23,20 +23,13 @@ public class AppDbTransaction : IDbResultTransaction, IDisposable
         _logger = logger;
         _connectionWrapper = connection;
 
-        try
-        {
-            if (connection.Connection.State == ConnectionState.Closed)
-            connection.Connection.Open();
+        if (connection.Connection.State == ConnectionState.Closed)
+        connection.Connection.Open();
 
-            if (Il is null)
-                Transaction = connection.Connection.BeginTransaction();
-            else
-                Transaction = connection.Connection.BeginTransaction((IsolationLevel)Il);
-        }
-        catch (Exception ex) // handle it on creation site
-        {
-            throw;
-        }
+        if (Il is null)
+            Transaction = connection.Connection.BeginTransaction();
+        else
+            Transaction = connection.Connection.BeginTransaction((IsolationLevel)Il);
     }
 
     public void Commit()
