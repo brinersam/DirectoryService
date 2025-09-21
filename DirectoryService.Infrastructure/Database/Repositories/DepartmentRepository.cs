@@ -4,15 +4,20 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework;
+using Microsoft.Extensions.Logging;
 using System.Text;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class DepartmentRepository : IDepartmentRepository
 {
+    private readonly ILogger<DepartmentRepository> _logger;
     private readonly AppDb _db;
 
-    public DepartmentRepository(AppDb connection)
+    public DepartmentRepository(
+        ILogger<DepartmentRepository> logger,
+        AppDb connection)
     {
+        _logger = logger;
         _db = connection;
     }
 
@@ -30,7 +35,7 @@ public class DepartmentRepository : IDepartmentRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -50,7 +55,7 @@ public class DepartmentRepository : IDepartmentRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -71,7 +76,7 @@ public class DepartmentRepository : IDepartmentRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -97,7 +102,13 @@ public class DepartmentRepository : IDepartmentRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
+    }
+
+    private Error HandleError(Exception ex)
+    {
+        _logger.LogError(ex, "Database error!");
+        return Errors.Database.DatabaseError();
     }
 }

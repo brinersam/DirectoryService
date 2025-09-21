@@ -5,16 +5,21 @@ using DirectoryService.Domain.Models;
 using DirectoryService.Infrastructure.Database.Datamodels;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Text;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class PositionRepository : IPositionRepository
 {
+    private readonly ILogger<PositionRepository> _logger;
     private readonly AppDb _db;
 
-    public PositionRepository(AppDb connection)
+    public PositionRepository(
+        ILogger<PositionRepository> logger,
+        AppDb connection)
     {
+        _logger = logger;
         _db = connection;
     }
 
@@ -74,7 +79,7 @@ public class PositionRepository : IPositionRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -88,7 +93,7 @@ public class PositionRepository : IPositionRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -124,7 +129,7 @@ public class PositionRepository : IPositionRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -162,7 +167,7 @@ public class PositionRepository : IPositionRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -206,7 +211,7 @@ public class PositionRepository : IPositionRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -227,5 +232,11 @@ public class PositionRepository : IPositionRepository
     {
         parameters.Add("ToDelete", departmentsRelationsToDelete);
         return $"DELETE FROM {DbTables.Departments_Positions} WHERE position_id = @PositionId AND department_id = ANY(@ToDelete)";
+    }
+
+    private Error HandleError(Exception ex)
+    {
+        _logger.LogError(ex, "Database error!");
+        return Errors.Database.DatabaseError();
     }
 }

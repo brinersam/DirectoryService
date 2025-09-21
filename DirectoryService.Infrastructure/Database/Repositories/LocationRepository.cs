@@ -5,16 +5,21 @@ using DirectoryService.Domain.Models.Locations;
 using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class LocationRepository : ILocationRepository
 {
+    private readonly ILogger<LocationRepository> _logger;
     private readonly AppDb _db;
 
-    public LocationRepository(AppDb connection)
+    public LocationRepository(
+        ILogger<LocationRepository> logger,
+        AppDb connection)
     {
+        _logger = logger;
         _db = connection;
     }
 
@@ -61,7 +66,7 @@ public class LocationRepository : ILocationRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -84,7 +89,7 @@ public class LocationRepository : ILocationRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
     }
 
@@ -110,7 +115,13 @@ public class LocationRepository : ILocationRepository
         }
         catch (Exception ex)
         {
-            return Errors.Database.DatabaseError();
+            return HandleError(ex);
         }
+    }
+
+    private Error HandleError(Exception ex)
+    {
+        _logger.LogError(ex, "Database error!");
+        return Errors.Database.DatabaseError();
     }
 }
