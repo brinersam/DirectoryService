@@ -3,46 +3,88 @@ using Dapper;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
-using System.Data;
+using DirectoryService.Shared.Framework;
+using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class DepartmentRepository : IDepartmentRepository
 {
-    private readonly IDbConnection _connection;
+    private readonly ILogger<DepartmentRepository> _logger;
+    private readonly AppDb _db;
 
-    public DepartmentRepository(IDbConnection connection)
+    public DepartmentRepository(
+        ILogger<DepartmentRepository> logger,
+        AppDb connection)
     {
-        _connection = connection;
+        _logger = logger;
+        _db = connection;
     }
 
     public async Task<Result<Department, Error>> GetDepartmentAsync(Guid id)
     {
-        var sql = $"SELECT * FROM {DbTables.Departments} WHERE id = @Id";
+        try
+        {
+            var sql = $"SELECT * FROM {DbTables.Departments} WHERE id = @Id";
 
-        var result = await _connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
-        if (result is null)
-            return Errors.General.NotFound(typeof(Department));
+            var result = await _db.Connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
+            if (result is null)
+                return Errors.General.NotFound(typeof(Department));
 
-        return result;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    public async Task<Result<List<Department>, Error>> GetDepartmentsAsync(IEnumerable<Guid> ids, bool active = true, CancellationToken ct = default)
+    {
+        try
+        {
+            var sql = new StringBuilder($"SELECT * FROM {DbTables.Departments} WHERE is_active = @Active AND id = ANY(@Ids)");
+
+            var cmd = new CommandDefinition(sql.ToString(), new { Ids = ids.ToArray(), Active = active }, _db.Transaction, cancellationToken: ct);
+
+            var result = await _db.Connection.QueryAsync<Department>(cmd);
+            if (result.Any() == false)
+                return Errors.General.NotFound(typeof(Department));
+
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
     }
 
     public async Task<UnitResult<Error>> AddDepartmentAsync(Department department)
     {
-        var sql = @$"INSERT INTO departments
+        try
+        {
+            var sql = @$"INSERT INTO departments
 					(id, name, identifier, parent_id, path, depth, is_active, created_at_utc, updated_at_utc) 
 					VALUES 
 					(@Id, @Name, @Identifier, @ParentId, @Path, @Depth, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
-        var rowsaffected = await _connection.ExecuteAsync(sql, department);
-        if (rowsaffected <= 0)
-            return Errors.General.DBRowsAffectedError<Department>(rowsaffected, 1);
+            var rowsaffected = await _db.Connection.ExecuteAsync(sql, department);
+            if (rowsaffected <= 0)
+                return Errors.Database.DBRowsAffectedError<Department>(rowsaffected, 1);
 
-        return Result.Success<Error>();
+            return Result.Success<Error>();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
     }
 
     public async Task<UnitResult<Error>> UpdateDepartmentAsync(Department department)
     {
-        var sql = $@"UPDATE {DbTables.Departments} SET
+        try
+        {
+            var sql = $@"UPDATE {DbTables.Departments} SET
 				name = @Name,
 				identifier = @Identifier,
 				parent_id = @ParentId,
@@ -52,10 +94,21 @@ public class DepartmentRepository : IDepartmentRepository
 				updated_at_utc = @UpdatedAtUtc
 			WHERE id = @Id";
 
-        var rowsaffected = await _connection.ExecuteAsync(sql, department);
-        if (rowsaffected <= 0)
-            return Errors.General.DBRowsAffectedError<Department>(rowsaffected, 1);
+            var rowsaffected = await _db.Connection.ExecuteAsync(sql, department);
+            if (rowsaffected <= 0)
+                return Errors.Database.DBRowsAffectedError<Department>(rowsaffected, 1);
 
-        return Result.Success<Error>();
+            return Result.Success<Error>();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    private Error HandleError(Exception ex)
+    {
+        _logger.LogError(ex, "Database error!");
+        return Errors.Database.DatabaseError();
     }
 }

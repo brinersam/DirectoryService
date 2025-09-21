@@ -4,18 +4,23 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Locations;
 using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
-using System.Data;
+using DirectoryService.Shared.Framework;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
 namespace DirectoryService.Infrastructure.Database.Repositories;
 public class LocationRepository : ILocationRepository
 {
-    private readonly IDbConnection _connection;
+    private readonly ILogger<LocationRepository> _logger;
+    private readonly AppDb _db;
 
-    public LocationRepository(IDbConnection connection)
+    public LocationRepository(
+        ILogger<LocationRepository> logger,
+        AppDb connection)
     {
-        _connection = connection;
+        _logger = logger;
+        _db = connection;
     }
 
     public async Task<Result<Location, Error>> GetLocationAsync(
@@ -24,59 +29,75 @@ public class LocationRepository : ILocationRepository
         LocationName? locationName = null,
         CancellationToken ct = default)
     {
-        var sql = new StringBuilder($"SELECT * FROM {DbTables.Locations} WHERE 1=1");
-        var parameters = new DynamicParameters();
-
-        if (id is null && address is null && locationName is null)
-            throw new ArgumentNullException("All arguments are null!");
-
-        if (id.HasValue)
+        try
         {
-            sql.Append(" AND id = @Id");
-            parameters.Add("Id", id.Value);
-        }
+            var sql = new StringBuilder($"SELECT * FROM {DbTables.Locations} WHERE 1=1");
+            var parameters = new DynamicParameters();
 
-        if (!string.IsNullOrEmpty(address))
+            if (id is null && address is null && locationName is null)
+                throw new ArgumentNullException("All arguments are null!");
+
+            if (id.HasValue)
+            {
+                sql.Append(" AND id = @Id");
+                parameters.Add("Id", id.Value);
+            }
+
+            if (!string.IsNullOrEmpty(address))
+            {
+                sql.Append(" AND address = @Address");
+                parameters.Add("Address", address);
+            }
+
+            if (locationName is not null)
+            {
+                var json = JsonSerializer.Serialize(locationName);
+                sql.Append(" AND name = @LocationName::jsonb");
+                parameters.Add("LocationName", json);
+            }
+
+            var cmd = new CommandDefinition(sql.ToString(), parameters, _db.Transaction, cancellationToken: ct);
+
+            var result = await _db.Connection.QuerySingleOrDefaultAsync<Location>(cmd);
+            if (result is null)
+                return Errors.General.NotFound(typeof(Location));
+
+            return result;
+        }
+        catch (Exception ex)
         {
-            sql.Append(" AND address = @Address");
-            parameters.Add("Address", address);
+            return HandleError(ex);
         }
-
-        if (locationName is not null)
-        {
-            var json = JsonSerializer.Serialize(locationName);
-            sql.Append(" AND name = @LocationName::jsonb");
-            parameters.Add("LocationName", json);
-        }
-
-        var cmd = new CommandDefinition(sql.ToString(), parameters, cancellationToken: ct);
-
-        var result = await _connection.QuerySingleOrDefaultAsync<Location>(cmd);
-        if (result is null)
-            return Errors.General.NotFound(typeof(Location));
-
-        return result;
     }
 
     public async Task<UnitResult<Error>> AddLocationAsync(Location location, CancellationToken ct = default)
     {
-        var sql = @$"INSERT INTO {DbTables.Locations} 
+        try
+        {
+            var sql = @$"INSERT INTO {DbTables.Locations} 
 					(id, name, address, timezone, is_active, created_at_utc, updated_at_utc) 
 					VALUES 
 					(@Id, @Name, @Address, @Timezone, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
-        var cmd = new CommandDefinition(sql, location, cancellationToken: ct);
+            var cmd = new CommandDefinition(sql, location, _db.Transaction, cancellationToken: ct);
 
-        var rowsaffected = await _connection.ExecuteAsync(cmd);
-        if (rowsaffected <= 0)
-            return Errors.General.DBRowsAffectedError<Location>(rowsaffected, 1);
+            var rowsaffected = await _db.Connection.ExecuteAsync(cmd);
+            if (rowsaffected <= 0)
+                return Errors.Database.DBRowsAffectedError<Location>(rowsaffected, 1);
 
-        return Result.Success<Error>();
+            return Result.Success<Error>();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
     }
 
     public async Task<UnitResult<Error>> UpdateLocationAsync(Location location, CancellationToken ct = default)
     {
-        var sql = @$"UPDATE {DbTables.Locations} SET
+        try
+        {
+            var sql = @$"UPDATE {DbTables.Locations} SET
 					name = @Name,
 					address = @Address,
 					timezone = @Timezone,
@@ -84,12 +105,23 @@ public class LocationRepository : ILocationRepository
 					updated_at_utc = @UpdatedAtUtc
 					WHERE id = @Id";
 
-        var cmd = new CommandDefinition(sql, location, cancellationToken: ct);
+            var cmd = new CommandDefinition(sql, location, _db.Transaction, cancellationToken: ct);
 
-        var rowsaffected = await _connection.ExecuteAsync(cmd);
-        if (rowsaffected <= 0)
-            return Errors.General.DBRowsAffectedError<Location>(rowsaffected, 1);
+            var rowsaffected = await _db.Connection.ExecuteAsync(cmd);
+            if (rowsaffected <= 0)
+                return Errors.Database.DBRowsAffectedError<Location>(rowsaffected, 1);
 
-        return Result.Success<Error>();
+            return Result.Success<Error>();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    private Error HandleError(Exception ex)
+    {
+        _logger.LogError(ex, "Database error!");
+        return Errors.Database.DatabaseError();
     }
 }

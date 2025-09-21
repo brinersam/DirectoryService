@@ -35,6 +35,7 @@
     restart: always
     environment:
         - ACCEPT_EULA=Y
+        - SEQ_FIRSTRUN_NOAUTHENTICATION=true
     ports:
         - "5341:5341"
         - "8078:80"

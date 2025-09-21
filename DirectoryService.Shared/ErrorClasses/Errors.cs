@@ -11,10 +11,6 @@ public static class Errors
             return Error.Validation($"Value {valueName} of type {typeof(T).Name} cannot be {emptyOrNull}!");
         }
 
-        public static Error DBRowsAffectedError<T>(int affectedRows, int expectedRows) =>
-            Error.Failure
-            ($"Failure during DB operation with type {typeof(T)}. Rolls affected/expected: {affectedRows}/{expectedRows}");
-
         public static Error ValueIsInvalid<T>(T value, string valueName) =>
             Error.Validation
             ($"Value {valueName} of type {typeof(T).Name} is invalid!");
@@ -33,5 +29,20 @@ public static class Errors
             => Error.Validation
                 ($"Value {valueName} of type {typeof(T).Name} cannot be {lessmore} than {len} elements long");
 
+    }
+
+    public static class Database
+    {
+        public static Error DatabaseError() =>
+            Error.Failure
+            ($"Database operation error!");
+
+        public static Error TransactionError() =>
+            Error.Failure
+            ($"Transaction error!");
+
+        public static Error DBRowsAffectedError<T>(int affectedRows, int expectedRows) =>
+            Error.Failure
+            ($"Failure during DB operation with type {typeof(T)}. Rolls affected/expected: {affectedRows}/{expectedRows}");
     }
 }

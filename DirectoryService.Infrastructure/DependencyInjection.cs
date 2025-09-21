@@ -5,6 +5,7 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Infrastructure.Database;
 using DirectoryService.Infrastructure.Database.Repositories;
+using DirectoryService.Shared.Framework;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Options;
 using FluentValidation;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
 using System.Data;
+using System.Data.Common;
 using System.Reflection;
 
 namespace DirectoryService.Infrastructure;
@@ -81,14 +83,14 @@ public static class DependencyInjection
 
     private static IHostApplicationBuilder EnsureDbExists(this IHostApplicationBuilder builder)
     {
-        var bdOpts = GetConfig(builder);
+        var bdOpts = GetDbConfig(builder);
         EnsureDatabase.For.PostgresqlDatabase(bdOpts.CString);
         return builder;
     }
 
     private static IHostApplicationBuilder AddMigrator(this IHostApplicationBuilder builder)
     {
-        var bdOpts = GetConfig(builder);
+        var bdOpts = GetDbConfig(builder);
         var upgrader = DeployChanges.To
                 .PostgresqlDatabase(bdOpts.CString)
                 .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
@@ -115,14 +117,15 @@ public static class DependencyInjection
 
     private static IHostApplicationBuilder AddIDbConnection(this IHostApplicationBuilder builder)
     {
-        var bdOpts = GetConfig(builder);
+        var bdOpts = GetDbConfig(builder);
 
         builder.Services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(bdOpts.CString));
+        builder.Services.AddScoped<AppDb>();
         return builder;
 
     }
 
-    private static OptionsPostgresql GetConfig(IHostApplicationBuilder builder) => builder.Configuration
+    private static OptionsPostgresql GetDbConfig(IHostApplicationBuilder builder) => builder.Configuration
                 .GetSection(OptionsPostgresql.SECTION)
                 .Get<OptionsPostgresql>()!;
 }
