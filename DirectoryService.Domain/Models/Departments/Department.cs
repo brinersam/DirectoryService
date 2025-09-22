@@ -25,16 +25,21 @@ public class Department
 
     public DateTime UpdatedAtUtc { get; private set; }
 
+    public IReadOnlyList<Guid> LocationIds => _locationIds.AsReadOnly();
+
+    private List<Guid> _locationIds = [];
+
     [JsonConstructor]
     private Department() { }
 
-    private Department(
+    public Department(
         Guid id,
         string name,
         string identifier,
         Guid? parentId,
         DepartmentPath path,
-        short depth)
+        short depth,
+        IEnumerable<Guid> locationIds)
     {
         Id = id;
         Name = name;
@@ -45,6 +50,7 @@ public class Department
         IsActive = true;
         CreatedAtUtc = DateTime.UtcNow;
         UpdatedAtUtc = DateTime.UtcNow;
+        _locationIds = locationIds.ToList();
     }
 
     public static Result<Department, List<Error>> Create(
@@ -79,6 +85,12 @@ public class Department
             identifier,
             parentId,
             path,
-            depth);
+            depth,
+            []);
+    }
+
+    public void SetLocations(IEnumerable<Guid> locationids)
+    {
+        _locationIds = locationids.ToList();
     }
 }
