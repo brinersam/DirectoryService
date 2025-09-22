@@ -8,5 +8,6 @@ public interface ILocationRepository
 {
     Task<UnitResult<Error>> AddLocationAsync(Location location, CancellationToken ct = default);
     Task<Result<Location, Error>> GetLocationAsync(Guid? id = null, string? address = null, LocationName? locationName = null, CancellationToken ct = default);
+    Task<Result<List<Location>, Error>> GetLocationsAsync(Guid[] locationIds, bool active = true, CancellationToken ct = default);
     Task<UnitResult<Error>> UpdateLocationAsync(Location location, CancellationToken ct = default);
 }

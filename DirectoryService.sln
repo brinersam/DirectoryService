@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectoryService.Presentati
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectoryService.Contracts", "DirectoryService.Contracts\DirectoryService.Contracts.csproj", "{E831A9C5-A12E-4F55-B604-47E19E56580A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DirectoryServiceLibraries", "DirectoryServiceLibraries", "{A4CCFC52-B60D-4783-88B0-51C85DBC3937}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DirectoryServiceProjects", "DirectoryServiceProjects", "{A4CCFC52-B60D-4783-88B0-51C85DBC3937}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectoryService.Shared", "DirectoryService.Shared\DirectoryService.Shared.csproj", "{4EAF2F0B-99C7-4B53-8430-21425B0C58E7}"
 EndProject
@@ -75,6 +75,7 @@ Global
 		{89D18C60-4B9A-43D5-8B11-3C6368C73118} = {A4CCFC52-B60D-4783-88B0-51C85DBC3937}
 		{AC49C31E-DC69-431E-8AED-451B695BB74A} = {A4CCFC52-B60D-4783-88B0-51C85DBC3937}
 		{E831A9C5-A12E-4F55-B604-47E19E56580A} = {A4CCFC52-B60D-4783-88B0-51C85DBC3937}
+		{4EAF2F0B-99C7-4B53-8430-21425B0C58E7} = {A4CCFC52-B60D-4783-88B0-51C85DBC3937}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {83362B4B-3FE3-4053-BFC8-8D08BA0586F8}

@@ -2,7 +2,6 @@
 using Dapper;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
-using DirectoryService.Infrastructure.Database.Datamodels;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework;
 using Microsoft.Extensions.Logging;
@@ -56,7 +55,7 @@ public class PositionRepository : IPositionRepository
 
             var cmd = new CommandDefinition(sql.ToString(), parameters, transaction: _db.Transaction, cancellationToken: ct);
 
-            var dataModel = await _db.Connection.QuerySingleOrDefaultAsync<PositionDataModel>(cmd);
+            var dataModel = await _db.Connection.QuerySingleOrDefaultAsync<Position>(cmd);
             if (dataModel is null)
                 return Errors.General.NotFound(typeof(Position));
 

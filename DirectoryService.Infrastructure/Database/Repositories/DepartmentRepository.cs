@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
 using DirectoryService.Application.Interfaces;
+using DirectoryService.Domain.Models;
 using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework;
@@ -21,15 +22,28 @@ public class DepartmentRepository : IDepartmentRepository
         _db = connection;
     }
 
-    public async Task<Result<Department, Error>> GetDepartmentAsync(Guid id)
+    public async Task<Result<Department, Error>> GetDepartmentAsync(Guid id, CancellationToken ct = default)
     {
         try
         {
             var sql = $"SELECT * FROM {DbTables.Departments} WHERE id = @Id";
 
-            var result = await _db.Connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
-            if (result is null)
+            var dataModel = await _db.Connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
+            if (dataModel is null)
                 return Errors.General.NotFound(typeof(Department));
+
+            var locationIds = await GetRelatedLocationIds(dataModel.Id, ct);
+            if (locationIds.IsFailure)
+                return locationIds.Error;
+
+            var result = new Department(
+                dataModel.Id,
+                dataModel.Name,
+                dataModel.Identifier,
+                dataModel.ParentId,
+                dataModel.Path,
+                dataModel.Depth,
+                locationIds.Value);
 
             return result;
         }
@@ -59,7 +73,7 @@ public class DepartmentRepository : IDepartmentRepository
         }
     }
 
-    public async Task<UnitResult<Error>> AddDepartmentAsync(Department department)
+    public async Task<UnitResult<Error>> AddDepartmentAsync(Department department, CancellationToken ct = default)
     {
         try
         {
@@ -68,9 +82,24 @@ public class DepartmentRepository : IDepartmentRepository
 					VALUES 
 					(@Id, @Name, @Identifier, @ParentId, @Path, @Depth, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
+            var transactionRes = _db.OpenTransactionIfNotOngoing();
+            if (transactionRes.IsFailure)
+                return transactionRes.Error;
+            using var transaction = transactionRes.Value;
+
+            var cmd = new CommandDefinition(sql, department, _db.Transaction, cancellationToken: ct);
+
             var rowsaffected = await _db.Connection.ExecuteAsync(sql, department);
             if (rowsaffected <= 0)
                 return Errors.Database.DBRowsAffectedError<Department>(rowsaffected, 1);
+
+            var syncRes = await SyncDepartmentWithLocations(department, ct);
+            if (syncRes.IsFailure)
+                return syncRes.Error;
+
+            var tCommitRes = transaction.TryCommit();
+            if (tCommitRes.IsFailure)
+                return tCommitRes.Error;
 
             return Result.Success<Error>();
         }
@@ -80,7 +109,7 @@ public class DepartmentRepository : IDepartmentRepository
         }
     }
 
-    public async Task<UnitResult<Error>> UpdateDepartmentAsync(Department department)
+    public async Task<UnitResult<Error>> UpdateDepartmentAsync(Department department, CancellationToken ct = default)
     {
         try
         {
@@ -94,9 +123,24 @@ public class DepartmentRepository : IDepartmentRepository
 				updated_at_utc = @UpdatedAtUtc
 			WHERE id = @Id";
 
+            var transactionRes = _db.OpenTransactionIfNotOngoing();
+            if (transactionRes.IsFailure)
+                return transactionRes.Error;
+            using var transaction = transactionRes.Value;
+
+            var cmd = new CommandDefinition(sql, department, _db.Transaction, cancellationToken: ct);
+
             var rowsaffected = await _db.Connection.ExecuteAsync(sql, department);
             if (rowsaffected <= 0)
                 return Errors.Database.DBRowsAffectedError<Department>(rowsaffected, 1);
+
+            var syncRes = await SyncDepartmentWithLocations(department, ct);
+            if (syncRes.IsFailure)
+                return syncRes.Error;
+
+            var tCommitRes = transaction.TryCommit();
+            if (tCommitRes.IsFailure)
+                return tCommitRes.Error;
 
             return Result.Success<Error>();
         }
@@ -104,6 +148,83 @@ public class DepartmentRepository : IDepartmentRepository
         {
             return HandleError(ex);
         }
+    }
+
+    public async Task<Result<IEnumerable<Guid>, Error>> GetRelatedLocationIds(Guid departmentId, CancellationToken ct = default)
+    {
+        try
+        {
+            var guidsql = $"SELECT location_id FROM {DbTables.Department_Location} WHERE department_id = @Id";
+            var cmd = new CommandDefinition(guidsql, new { Id = departmentId }, transaction: _db.Transaction, cancellationToken: ct);
+            return (await _db.Connection.QueryAsync<Guid>(cmd)).ToList();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    public async Task<UnitResult<Error>> SyncDepartmentWithLocations(Department department, CancellationToken ct = default)
+    {
+        try
+        {
+            var dbLocationIdsRes = await GetRelatedLocationIds(department.Id, ct);
+            if (dbLocationIdsRes.IsFailure)
+                return dbLocationIdsRes.Error;
+
+            var locationRelationsToDelete = dbLocationIdsRes.Value.Where(x => department.LocationIds.Contains(x) is false).ToArray();
+            var locationRelationsToAdd = department.LocationIds.Where(x => dbLocationIdsRes.Value.Contains(x) is false).ToArray();
+
+            if (!locationRelationsToAdd.Any() && !locationRelationsToDelete.Any())
+                return Result.Success<Error>();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("DepartmentId", department.Id);
+
+            var sql = new StringBuilder();
+
+            var sqlCmds = new List<string>();
+            if (locationRelationsToDelete.Any())
+                sqlCmds.Add(CreateDeleteSql(locationRelationsToDelete, parameters));
+
+            if (locationRelationsToAdd.Any())
+                sqlCmds.Add(CreateInsertSql(locationRelationsToAdd, parameters));
+
+            sql.Append(String.Join(';', sqlCmds));
+            sql.Append(";");
+
+            var cmd = new CommandDefinition(sql.ToString(), parameters, transaction: _db.Transaction, cancellationToken: ct);
+
+            var rowsAffected = await _db.Connection.ExecuteAsync(cmd);
+            var expectedAffected = locationRelationsToDelete.Length + locationRelationsToAdd.Length;
+            if (rowsAffected != expectedAffected)
+                return Errors.Database.DBRowsAffectedError<Position>(rowsAffected, expectedAffected);
+
+            return Result.Success<Error>();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    private static string CreateInsertSql(Guid[] locationRelationsToAdd, DynamicParameters parameters)
+    {
+        var sql = new StringBuilder($"INSERT INTO {DbTables.Department_Location} (department_id, location_id) VALUES");
+        var sqlValues = new string[locationRelationsToAdd.Length];
+        for (int i = 0; i < locationRelationsToAdd.Length; i++)
+        {
+            sqlValues[i] = $" (@DepartmentId, @LocationId{i})";
+            parameters.Add($"LocationId{i}", locationRelationsToAdd[i]);
+        }
+        sql.Append(String.Join(',', sqlValues));
+        return sql.ToString();
+    }
+
+    private static string CreateDeleteSql(Guid[] locationRelationsToDelete, DynamicParameters parameters)
+    {
+        parameters.Add("ToDelete", locationRelationsToDelete);
+        return $"DELETE FROM {DbTables.Department_Location} WHERE department_id = @DepartmentId AND location_id = ANY(@ToDelete)";
     }
 
     private Error HandleError(Exception ex)
