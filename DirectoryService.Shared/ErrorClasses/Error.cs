@@ -28,6 +28,14 @@ public class Error
          new Error(code, message, ErrorType.Failure);
 }
 
+public static class ErrorExtentions
+{
+    public static Error[] ToSingleErrorArray(this Error error)
+    {
+        return [error];
+    }
+}
+
 public enum ErrorType
 {
     Not_set,

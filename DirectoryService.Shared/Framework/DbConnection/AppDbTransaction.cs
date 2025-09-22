@@ -24,7 +24,7 @@ public class AppDbTransaction : IDbResultTransaction, IDisposable
         _connectionWrapper = connection;
 
         if (connection.Connection.State == ConnectionState.Closed)
-        connection.Connection.Open();
+            connection.Connection.Open();
 
         if (Il is null)
             Transaction = connection.Connection.BeginTransaction();
