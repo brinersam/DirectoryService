@@ -3,8 +3,8 @@ using DbUp;
 using DirectoryService.Application.Features.Commands.CreateLocation;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
-using DirectoryService.Infrastructure.Database;
 using DirectoryService.Infrastructure.Database.Repositories;
+using DirectoryService.Infrastructure.Database.TypeHandlers;
 using DirectoryService.Shared.Framework;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Options;
@@ -24,6 +24,7 @@ public static class DependencyInjection
     {
         return builder.EnsureDbExists()
             .RegisterJsonbConvertersDapper()
+            .RegisterCustomConvertersDapper()
             .AddIDbConnection()
             .AddMigrator()
             .AddRepositories()
@@ -45,6 +46,13 @@ public static class DependencyInjection
 
         return builder;
     }
+
+    private static IHostApplicationBuilder RegisterCustomConvertersDapper(this IHostApplicationBuilder builder)
+    {
+        SqlMapper.AddTypeHandler(new PathTypeHandler());
+        return builder;
+    }
+
 
     private static IHostApplicationBuilder RegisterJsonbConvertersDapper(this IHostApplicationBuilder builder)
     {
