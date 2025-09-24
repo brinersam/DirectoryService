@@ -82,10 +82,7 @@ public class DepartmentRepository : IDepartmentRepository
 					VALUES 
 					(@Id, @Name, @Identifier, @ParentId, @Path, @Depth, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
-            var transactionRes = _db.OpenTransactionIfNotOngoing();
-            if (transactionRes.IsFailure)
-                return transactionRes.Error;
-            using var transaction = transactionRes.Value;
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
 
             var cmd = new CommandDefinition(sql, department, _db.Transaction, cancellationToken: ct);
 
@@ -96,10 +93,8 @@ public class DepartmentRepository : IDepartmentRepository
             var syncRes = await SyncDepartmentWithLocations(department, ct);
             if (syncRes.IsFailure)
                 return syncRes.Error;
-
-            var tCommitRes = transaction.TryCommit();
-            if (tCommitRes.IsFailure)
-                return tCommitRes.Error;
+            
+            transaction.Commit();
 
             return Result.Success<Error>();
         }
@@ -123,10 +118,7 @@ public class DepartmentRepository : IDepartmentRepository
 				updated_at_utc = @UpdatedAtUtc
 			WHERE id = @Id";
 
-            var transactionRes = _db.OpenTransactionIfNotOngoing();
-            if (transactionRes.IsFailure)
-                return transactionRes.Error;
-            using var transaction = transactionRes.Value;
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
 
             var cmd = new CommandDefinition(sql, department, _db.Transaction, cancellationToken: ct);
 
@@ -138,9 +130,7 @@ public class DepartmentRepository : IDepartmentRepository
             if (syncRes.IsFailure)
                 return syncRes.Error;
 
-            var tCommitRes = transaction.TryCommit();
-            if (tCommitRes.IsFailure)
-                return tCommitRes.Error;
+            transaction.Commit();
 
             return Result.Success<Error>();
         }
