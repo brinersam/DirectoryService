@@ -65,7 +65,7 @@ public static class DependencyInjection
         if (addTypeHandler == null)
             throw new Exception("Cannot find generic AddTypeHandler<T>() method.");
 
-        foreach (var type in types)
+        foreach (var type in types) // doesnt work for a record containing a jsonb btw
         {
             var handlerType = typeof(JsonbTypeHandler<>).MakeGenericType(type);
             var handlerInstance = Activator.CreateInstance(handlerType);

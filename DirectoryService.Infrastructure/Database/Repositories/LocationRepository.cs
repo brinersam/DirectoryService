@@ -70,6 +70,27 @@ public class LocationRepository : ILocationRepository
         }
     }
 
+    public async Task<Result<List<Location>, Error>> GetLocationsAsync(Guid[] locationIds, bool active = true, CancellationToken ct = default)
+    {
+        try
+        {
+            var sql = new StringBuilder($"SELECT * FROM {DbTables.Locations} WHERE is_active = @Active AND id = ANY(@Ids)");
+
+            var cmd = new CommandDefinition(sql.ToString(), new { Ids = locationIds.ToArray(), Active = active }, _db.Transaction, cancellationToken: ct);
+
+            var result = await _db.Connection.QueryAsync<Location>(cmd);
+            if (result.Any() == false)
+                return Errors.General.NotFound(typeof(Location));
+
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+
     public async Task<UnitResult<Error>> AddLocationAsync(Location location, CancellationToken ct = default)
     {
         try

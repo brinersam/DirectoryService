@@ -5,11 +5,11 @@ using DirectoryService.Shared.ErrorClasses;
 namespace DirectoryService.Application.Interfaces;
 public interface IDepartmentRepository
 {
-    Task<UnitResult<Error>> AddDepartmentAsync(Department department);
+    Task<UnitResult<Error>> AddDepartmentAsync(Department department, CancellationToken ct = default);
 
-    Task<Result<Department, Error>> GetDepartmentAsync(Guid id);
+    Task<Result<Department, Error>> GetDepartmentAsync(Guid id, CancellationToken ct = default);
 
     Task<Result<List<Department>, Error>> GetDepartmentsAsync(IEnumerable<Guid> ids, bool active = true, CancellationToken ct = default);
 
-    Task<UnitResult<Error>> UpdateDepartmentAsync(Department department);
+    Task<UnitResult<Error>> UpdateDepartmentAsync(Department department, CancellationToken ct = default);
 }
