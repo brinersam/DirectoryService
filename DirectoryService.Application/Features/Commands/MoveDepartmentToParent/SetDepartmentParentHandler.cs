@@ -1,7 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Shared.ErrorClasses;
-using FluentValidation;
 
 namespace DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
 

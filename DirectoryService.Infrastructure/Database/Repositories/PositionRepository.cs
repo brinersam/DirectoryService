@@ -82,7 +82,7 @@ public class PositionRepository : IPositionRepository
         }
     }
 
-    public async Task<Result<IEnumerable<Guid>,Error>> GetRelatedDepartmentIds(Guid positionId, CancellationToken ct = default)
+    public async Task<Result<IEnumerable<Guid>, Error>> GetRelatedDepartmentIds(Guid positionId, CancellationToken ct = default)
     {
         try
         {

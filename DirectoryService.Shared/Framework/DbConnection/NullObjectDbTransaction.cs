@@ -32,7 +32,7 @@ public class NullObjectDbTransaction : IDbResultTransaction, IDisposable
         return Result.Success<Error>();
     }
 
-    public UnitResult<Error> TryRollback() 
+    public UnitResult<Error> TryRollback()
     {
         return Result.Success<Error>();
     }

@@ -104,7 +104,7 @@ public class DepartmentRepository : IDepartmentRepository
             var syncRes = await SyncDepartmentWithLocations(department, ct);
             if (syncRes.IsFailure)
                 return syncRes.Error;
-            
+
             transaction.Commit();
 
             return Result.Success<Error>();
@@ -300,7 +300,7 @@ public class DepartmentRepository : IDepartmentRepository
             sql.Append(" FOR UPDATE");
         sql.Append(";");
 
-        var cmdChildren = new CommandDefinition(sql.ToString(), new{DepId = parentDepartmentId}, transaction: _db.Transaction, cancellationToken: ct);
+        var cmdChildren = new CommandDefinition(sql.ToString(), new { DepId = parentDepartmentId }, transaction: _db.Transaction, cancellationToken: ct);
         return (await _db.Connection.QueryAsync<Guid>(cmdChildren)).Where(x => x != parentDepartmentId).ToHashSet();
     }
 

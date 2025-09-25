@@ -49,7 +49,7 @@ public class CreateLocationHandler
 
         var result = await _repository.AddLocationAsync(createLocation.Value, ct);
         if (result.IsFailure)
-            return new[]{ result.Error };
+            return new[] { result.Error };
 
         return createLocation.Value.Id;
     }

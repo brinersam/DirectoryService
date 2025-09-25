@@ -33,7 +33,7 @@ public class AppDb
         Connection = connection;
     }
 
-    public Result<IDbTransaction,Error> BeginTransaction(IsolationLevel? il = null)
+    public Result<IDbTransaction, Error> BeginTransaction(IsolationLevel? il = null)
     {
         try
         {
