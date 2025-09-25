@@ -1,5 +1,6 @@
 ﻿using DirectoryService.Application.Features.Commands.CreateDepartment;
-using DirectoryService.Application.Features.Commands.UpdateDepartment;
+using DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
+using DirectoryService.Application.Features.Commands.UpdateDepartmentLocations;
 using DirectoryService.Contracts.Requests;
 using DirectoryService.Shared.Framework;
 using Microsoft.AspNetCore.Mvc;

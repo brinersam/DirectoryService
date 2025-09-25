@@ -2,7 +2,7 @@
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework;
+using DirectoryService.Shared.Framework.DbConnection;
 using DirectoryService.Shared.Validator;
 using FluentValidation;
 

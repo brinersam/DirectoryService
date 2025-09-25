@@ -1,11 +1,10 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework.DbConnection;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using IsolationLevel = System.Data.IsolationLevel;
 
-namespace DirectoryService.Shared.Framework;
+namespace DirectoryService.Shared.Framework.DbConnection;
 public class AppDb
 {
     private readonly ILogger<AppDbTransaction> _loggerAppDbTransaction;

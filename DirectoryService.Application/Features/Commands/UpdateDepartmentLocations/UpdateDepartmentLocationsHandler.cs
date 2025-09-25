@@ -5,7 +5,7 @@ using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
 using FluentValidation;
 
-namespace DirectoryService.Application.Features.Commands.UpdateDepartment;
+namespace DirectoryService.Application.Features.Commands.UpdateDepartmentLocations;
 
 public class UpdateDepartmentLocationsHandler
 {
@@ -38,7 +38,7 @@ public class UpdateDepartmentLocationsHandler
             .ToArray();
 
         if (duplicateLocationIds.Length > 0)
-            return Error.Validation($"No duplicate location ids are allowed! [{String.Join(';', duplicateLocationIds)}]").ToSingleErrorArray();
+            return Error.Validation($"No duplicate location ids are allowed! [{string.Join(';', duplicateLocationIds)}]").ToSingleErrorArray();
 
         var getActiveLocationsRes = await _locationRepository.GetLocationsAsync(cmd.Request.LocationIds, ct: ct);
         if (getActiveLocationsRes.IsFailure)
@@ -48,7 +48,7 @@ public class UpdateDepartmentLocationsHandler
         {
             var activeValidLocationIds = getActiveLocationsRes.Value.Select(x => x.Id);
             var invalidLocations = cmd.Request.LocationIds.Where(x => activeValidLocationIds.Contains(x) == false);
-            return Error.Validation($"Some locations are inactive or invalid! ids: [{String.Join(';', invalidLocations)}]").ToSingleErrorArray();
+            return Error.Validation($"Some locations are inactive or invalid! ids: [{string.Join(';', invalidLocations)}]").ToSingleErrorArray();
         }
 
         var department = await _departmentRepository.GetDepartmentAsync(cmd.DepartmentId, ct: ct);

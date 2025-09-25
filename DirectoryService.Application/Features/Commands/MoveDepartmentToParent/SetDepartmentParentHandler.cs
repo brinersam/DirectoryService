@@ -3,7 +3,7 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Shared.ErrorClasses;
 using FluentValidation;
 
-namespace DirectoryService.Presentation.Controllers;
+namespace DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
 
 public class SetDepartmentParentHandler
 {

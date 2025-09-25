@@ -5,7 +5,7 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Infrastructure.Database.Repositories;
 using DirectoryService.Infrastructure.Database.TypeHandlers;
-using DirectoryService.Shared.Framework;
+using DirectoryService.Shared.Framework.DbConnection;
 using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Options;
 using FluentValidation;

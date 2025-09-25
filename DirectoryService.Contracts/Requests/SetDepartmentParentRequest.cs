@@ -1,3 +1,3 @@
-﻿namespace DirectoryService.Presentation.Controllers;
+﻿namespace DirectoryService.Contracts.Requests;
 
 public record SetDepartmentParentRequest(Guid? parentDepartmentId);

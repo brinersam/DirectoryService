@@ -1,8 +1,8 @@
 ﻿using DirectoryService.Application.Features.Commands.CreateDepartment;
 using DirectoryService.Application.Features.Commands.CreateLocation;
 using DirectoryService.Application.Features.Commands.CreatePosition;
-using DirectoryService.Application.Features.Commands.UpdateDepartment;
-using DirectoryService.Presentation.Controllers;
+using DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
+using DirectoryService.Application.Features.Commands.UpdateDepartmentLocations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

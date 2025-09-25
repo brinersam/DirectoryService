@@ -1,5 +1,6 @@
-﻿
-namespace DirectoryService.Presentation.Controllers;
+﻿using DirectoryService.Contracts.Requests;
+
+namespace DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
 
 public record SetDepartmentParentCommand(
     Guid departmentId,
