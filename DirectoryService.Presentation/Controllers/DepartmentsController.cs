@@ -37,4 +37,20 @@ public class DepartmentsController : AppController
 
         return Ok(result.Value);
     }
+
+    [HttpPut("{departmentId:Guid}/parent")]
+    public async Task<IActionResult> SetDepartmentParent(
+        [FromRoute] Guid departmentId,
+        [FromBody] SetDepartmentParentRequest req,
+        [FromServices] SetDepartmentParentHandler handler,
+        CancellationToken ct = default)
+    {
+        var cmd = new SetDepartmentParentCommand(departmentId, req);
+
+        var result = await handler.HandleAsync(cmd, ct);
+        if (result.IsFailure)
+            return result.Error.ToResponse();
+
+        return Ok();
+    }
 }

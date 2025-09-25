@@ -7,7 +7,9 @@ public interface IDepartmentRepository
 {
     Task<UnitResult<Error>> AddDepartmentAsync(Department department, CancellationToken ct = default);
 
-    Task<Result<Department, Error>> GetDepartmentAsync(Guid id, CancellationToken ct = default);
+    Task<UnitResult<Error>> MoveDepartmentToParent(Guid departmentId, Guid? parentId, CancellationToken ct = default);
+
+    Task<Department> GetDepartmentAsync(Guid? id, bool? isActive = true, CancellationToken ct = default);
 
     Task<Result<List<Department>, Error>> GetDepartmentsAsync(IEnumerable<Guid> ids, bool active = true, CancellationToken ct = default);
 
