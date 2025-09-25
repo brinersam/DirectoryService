@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
 using System.Data;
-using System.Data.Common;
 using System.Reflection;
 
 namespace DirectoryService.Infrastructure;
@@ -87,7 +86,6 @@ public static class DependencyInjection
 
         return builder;
     }
-
 
     private static IHostApplicationBuilder EnsureDbExists(this IHostApplicationBuilder builder)
     {

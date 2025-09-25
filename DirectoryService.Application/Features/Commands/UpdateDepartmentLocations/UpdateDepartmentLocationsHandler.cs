@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Application.Interfaces;
+using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Validator;
 using FluentValidation;
@@ -50,16 +51,16 @@ public class UpdateDepartmentLocationsHandler
             return Error.Validation($"Some locations are inactive or invalid! ids: [{String.Join(';', invalidLocations)}]").ToSingleErrorArray();
         }
 
-        var departmentRes = await _departmentRepository.GetDepartmentAsync(cmd.DepartmentId, ct: ct);
-        if (departmentRes.IsFailure)
-            return departmentRes.Error.ToSingleErrorArray();
+        var department = await _departmentRepository.GetDepartmentAsync(cmd.DepartmentId, ct: ct);
+        if (department is null)
+            return Errors.General.NotFound(typeof(Department), cmd.DepartmentId).ToSingleErrorArray();
 
-        departmentRes.Value.SetLocations(cmd.Request.LocationIds);
+        department.SetLocations(cmd.Request.LocationIds);
 
-        var updateRes = await _departmentRepository.UpdateDepartmentAsync(departmentRes.Value, ct);
+        var updateRes = await _departmentRepository.UpdateDepartmentAsync(department, ct);
         if (updateRes.IsFailure)
             return updateRes.Error.ToSingleErrorArray();
 
-        return departmentRes.Value.Id;
+        return department.Id;
     }
 }
