@@ -1,11 +1,10 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.ModelInterfaces;
 using DirectoryService.Shared.Validator;
 using System.Text.Json.Serialization;
 
 namespace DirectoryService.Domain.Models.Departments.ValueObject;
-public class DepartmentPath : IJsonbObject
+public class DepartmentPath
 {
     public string Value { get; init; }
 

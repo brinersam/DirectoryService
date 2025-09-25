@@ -35,10 +35,9 @@ public class CreateDepartmentHandler
         var path = cmd.request.Identifier;
         if (cmd.request.ParentId is not null)
         {
-            var getParentDepartment = await _repository.GetDepartmentAsync((Guid)cmd.request.ParentId);
-            if (getParentDepartment.IsSuccess)
+            var parentDepartment = await _repository.GetDepartmentAsync((Guid)cmd.request.ParentId, ct: ct);
+            if (parentDepartment is not null)
             {
-                var parentDepartment = getParentDepartment.Value;
                 depth = (short)(parentDepartment.Depth + 1);
                 path = $"{parentDepartment.Path.Value}.{cmd.request.Identifier}";
             }

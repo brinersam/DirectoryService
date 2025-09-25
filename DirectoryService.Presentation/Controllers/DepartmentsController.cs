@@ -1,5 +1,6 @@
 ﻿using DirectoryService.Application.Features.Commands.CreateDepartment;
-using DirectoryService.Application.Features.Commands.UpdateDepartment;
+using DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
+using DirectoryService.Application.Features.Commands.UpdateDepartmentLocations;
 using DirectoryService.Contracts.Requests;
 using DirectoryService.Shared.Framework;
 using Microsoft.AspNetCore.Mvc;
@@ -36,5 +37,21 @@ public class DepartmentsController : AppController
             return result.Error.ToResponse();
 
         return Ok(result.Value);
+    }
+
+    [HttpPut("{departmentId:Guid}/parent")]
+    public async Task<IActionResult> SetDepartmentParent(
+        [FromRoute] Guid departmentId,
+        [FromBody] SetDepartmentParentRequest req,
+        [FromServices] SetDepartmentParentHandler handler,
+        CancellationToken ct = default)
+    {
+        var cmd = new SetDepartmentParentCommand(departmentId, req);
+
+        var result = await handler.HandleAsync(cmd, ct);
+        if (result.IsFailure)
+            return result.Error.ToResponse();
+
+        return Ok();
     }
 }

@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace DirectoryService.Shared;
+﻿namespace DirectoryService.Shared;
 
 public record Envelope
 {

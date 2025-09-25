@@ -1,10 +1,9 @@
 ﻿using CSharpFunctionalExtensions;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework.DbConnection;
 using System.Data;
 using IsolationLevel = System.Data.IsolationLevel;
 
-namespace DirectoryService.Shared.Framework;
+namespace DirectoryService.Shared.Framework.DbConnection;
 
 public class NullObjectDbTransaction : IDbResultTransaction, IDisposable
 {
@@ -33,7 +32,7 @@ public class NullObjectDbTransaction : IDbResultTransaction, IDisposable
         return Result.Success<Error>();
     }
 
-    public UnitResult<Error> TryRollback() 
+    public UnitResult<Error> TryRollback()
     {
         return Result.Success<Error>();
     }

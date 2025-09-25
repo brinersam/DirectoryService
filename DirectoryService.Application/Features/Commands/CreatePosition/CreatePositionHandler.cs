@@ -2,7 +2,7 @@
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework;
+using DirectoryService.Shared.Framework.DbConnection;
 using DirectoryService.Shared.Validator;
 using FluentValidation;
 
@@ -37,7 +37,7 @@ public class CreatePositionHandler
 
         var existingPositonRes = await _repositoryPosition.GetPositionAsync(name: cmd.request.Name, ct: ct);
         if (existingPositonRes.IsSuccess)
-            return new[] {Error.Validation($"Имя позиции [{cmd.request.Name}] уже используется!")};
+            return new[] { Error.Validation($"Имя позиции [{cmd.request.Name}] уже используется!") };
 
         var validDepartments = await _repositoryDepartment.GetDepartmentsAsync(cmd.request.DepartmentIds, true, ct);
         if (validDepartments.IsFailure)

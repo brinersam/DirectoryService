@@ -4,7 +4,7 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Domain.Models.Departments;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework;
+using DirectoryService.Shared.Framework.DbConnection;
 using Microsoft.Extensions.Logging;
 using System.Text;
 
@@ -22,19 +22,29 @@ public class DepartmentRepository : IDepartmentRepository
         _db = connection;
     }
 
-    public async Task<Result<Department, Error>> GetDepartmentAsync(Guid id, CancellationToken ct = default)
+    public async Task<Department> GetDepartmentAsync(Guid? id, bool? isActive = true, CancellationToken ct = default)
     {
         try
         {
-            var sql = $"SELECT * FROM {DbTables.Departments} WHERE id = @Id";
+            var sql = new StringBuilder($"SELECT * FROM {DbTables.Departments} WHERE id = @Id");
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id);
 
-            var dataModel = await _db.Connection.QuerySingleOrDefaultAsync<Department>(sql, new { Id = id });
+            if (isActive.HasValue)
+            {
+                parameters.Add("IsActive", isActive);
+                sql.Append(" AND is_active = @IsActive");
+            }
+
+            var cmd = new CommandDefinition(sql.ToString(), parameters, _db.Transaction, cancellationToken: ct);
+
+            var dataModel = await _db.Connection.QuerySingleOrDefaultAsync<Department>(cmd);
             if (dataModel is null)
-                return Errors.General.NotFound(typeof(Department));
+                return dataModel!;
 
             var locationIds = await GetRelatedLocationIds(dataModel.Id, ct);
             if (locationIds.IsFailure)
-                return locationIds.Error;
+                return dataModel;
 
             var result = new Department(
                 dataModel.Id,
@@ -49,7 +59,8 @@ public class DepartmentRepository : IDepartmentRepository
         }
         catch (Exception ex)
         {
-            return HandleError(ex);
+            HandleError(ex);
+            return null!;
         }
     }
 
@@ -82,10 +93,7 @@ public class DepartmentRepository : IDepartmentRepository
 					VALUES 
 					(@Id, @Name, @Identifier, @ParentId, @Path, @Depth, @IsActive, @CreatedAtUtc, @UpdatedAtUtc)";
 
-            var transactionRes = _db.OpenTransactionIfNotOngoing();
-            if (transactionRes.IsFailure)
-                return transactionRes.Error;
-            using var transaction = transactionRes.Value;
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
 
             var cmd = new CommandDefinition(sql, department, _db.Transaction, cancellationToken: ct);
 
@@ -97,9 +105,7 @@ public class DepartmentRepository : IDepartmentRepository
             if (syncRes.IsFailure)
                 return syncRes.Error;
 
-            var tCommitRes = transaction.TryCommit();
-            if (tCommitRes.IsFailure)
-                return tCommitRes.Error;
+            transaction.Commit();
 
             return Result.Success<Error>();
         }
@@ -123,10 +129,7 @@ public class DepartmentRepository : IDepartmentRepository
 				updated_at_utc = @UpdatedAtUtc
 			WHERE id = @Id";
 
-            var transactionRes = _db.OpenTransactionIfNotOngoing();
-            if (transactionRes.IsFailure)
-                return transactionRes.Error;
-            using var transaction = transactionRes.Value;
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
 
             var cmd = new CommandDefinition(sql, department, _db.Transaction, cancellationToken: ct);
 
@@ -138,9 +141,7 @@ public class DepartmentRepository : IDepartmentRepository
             if (syncRes.IsFailure)
                 return syncRes.Error;
 
-            var tCommitRes = transaction.TryCommit();
-            if (tCommitRes.IsFailure)
-                return tCommitRes.Error;
+            transaction.Commit();
 
             return Result.Success<Error>();
         }
@@ -206,6 +207,101 @@ public class DepartmentRepository : IDepartmentRepository
         {
             return HandleError(ex);
         }
+    }
+
+    public async Task<UnitResult<Error>> MoveDepartmentToParent(
+        Guid departmentId,
+        Guid? parentId,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
+
+            var lockedChildDepartments = await GetChildrenIdsOf(departmentId, @lock: true, ct); // also locks department being moved
+
+            if (parentId.HasValue)
+            {
+                var departmentInChildren = lockedChildDepartments.Contains((Guid)parentId);
+                if (departmentInChildren)
+                    return Error.Failure("Can not move department into its child");
+            }
+
+            var mutationSql = $"subpath(d.path, nlevel(moving_element.path)-1)";
+            if (parentId.HasValue)
+                mutationSql = $"parent.path || subpath(d.path, nlevel(moving_element.path)-1)";
+
+            var sql =
+            $"""
+                UPDATE {DbTables.Departments} --update the id
+                SET 
+                    parent_id = @ParentId
+                WHERE
+                    id = @ChildId;
+
+                WITH new_parent AS --update the paths, depths
+                (
+                    SELECT id, path
+                    FROM {DbTables.Departments} 
+                    WHERE {DbTables.Departments}.id = @ParentId
+                ),
+                moving_element AS 
+                (
+                    SELECT path
+                    FROM {DbTables.Departments}
+                    WHERE {DbTables.Departments}.id = @ChildId
+                )
+                UPDATE {DbTables.Departments} d
+                SET 
+                    path = {mutationSql},
+                    depth = nlevel({mutationSql})-1
+                FROM
+                    moving_element
+                LEFT JOIN new_parent parent ON true --in case of null parent since FROM is implicit inner join which also breaks moving_element
+                WHERE 
+                    d.path <@ moving_element.path;
+            """;
+
+            var parameters = new DynamicParameters();
+            parameters.Add("ChildId", departmentId);
+            parameters.Add("ParentId", parentId, dbType: System.Data.DbType.Guid);
+
+            var cmd = new CommandDefinition(sql, parameters, transaction: _db.Transaction, cancellationToken: ct);
+            await _db.Connection.ExecuteAsync(cmd);
+
+            transaction.Commit();
+
+            return Result.Success<Error>();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    private async Task<HashSet<Guid>> GetChildrenIdsOf(Guid parentDepartmentId, bool @lock = false, CancellationToken ct = default)
+    {
+        var sql = new StringBuilder(
+                $"""
+                    WITH dep AS --lock the tree
+                    (
+                        SELECT path
+                        FROM {DbTables.Departments}
+                        WHERE {DbTables.Departments}.id = @DepId
+                    )
+                    SELECT children.id
+                    FROM 
+                        {DbTables.Departments} children,
+                        dep
+                    WHERE children.path <@ dep.path
+                """);
+
+        if (@lock)
+            sql.Append(" FOR UPDATE");
+        sql.Append(";");
+
+        var cmdChildren = new CommandDefinition(sql.ToString(), new { DepId = parentDepartmentId }, transaction: _db.Transaction, cancellationToken: ct);
+        return (await _db.Connection.QueryAsync<Guid>(cmdChildren)).Where(x => x != parentDepartmentId).ToHashSet();
     }
 
     private static string CreateInsertSql(Guid[] locationRelationsToAdd, DynamicParameters parameters)

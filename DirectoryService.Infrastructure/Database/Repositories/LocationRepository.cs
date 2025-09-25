@@ -4,7 +4,7 @@ using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models.Locations;
 using DirectoryService.Domain.Models.Locations.ValueObject;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework;
+using DirectoryService.Shared.Framework.DbConnection;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;

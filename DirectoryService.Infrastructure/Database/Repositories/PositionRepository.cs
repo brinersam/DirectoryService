@@ -3,7 +3,7 @@ using Dapper;
 using DirectoryService.Application.Interfaces;
 using DirectoryService.Domain.Models;
 using DirectoryService.Shared.ErrorClasses;
-using DirectoryService.Shared.Framework;
+using DirectoryService.Shared.Framework.DbConnection;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Text;
@@ -82,7 +82,7 @@ public class PositionRepository : IPositionRepository
         }
     }
 
-    public async Task<Result<IEnumerable<Guid>,Error>> GetRelatedDepartmentIds(Guid positionId, CancellationToken ct = default)
+    public async Task<Result<IEnumerable<Guid>, Error>> GetRelatedDepartmentIds(Guid positionId, CancellationToken ct = default)
     {
         try
         {
@@ -107,10 +107,7 @@ public class PositionRepository : IPositionRepository
 
             var cmd = new CommandDefinition(sql, position, _db.Transaction, cancellationToken: ct);
 
-            var transactionRes = _db.OpenTransactionIfNotOngoing();
-            if (transactionRes.IsFailure)
-                return transactionRes.Error;
-            using var transaction = transactionRes.Value;
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
 
             var rowsaffected = await _db.Connection.ExecuteAsync(cmd);
             if (rowsaffected <= 0)
@@ -120,9 +117,7 @@ public class PositionRepository : IPositionRepository
             if (synced.IsFailure)
                 return synced.Error;
 
-            var commitRes = transaction.TryCommit();
-            if (commitRes.IsFailure)
-                return commitRes.Error;
+            transaction.Commit();
 
             return Result.Success<Error>();
         }
@@ -143,10 +138,7 @@ public class PositionRepository : IPositionRepository
 					updated_at_utc = @UpdatedAtUtc
 					WHERE id = @Id";
 
-            var transactionRes = _db.OpenTransactionIfNotOngoing();
-            if (transactionRes.IsFailure)
-                return transactionRes.Error;
-            using var transaction = transactionRes.Value;
+            using var transaction = _db.OpenTransactionIfNotOngoing().Value;
 
             var cmd = new CommandDefinition(sql, position, _db.Transaction, cancellationToken: ct);
 
@@ -158,9 +150,7 @@ public class PositionRepository : IPositionRepository
             if (synced.IsFailure)
                 return synced.Error;
 
-            var commitRes = transaction.TryCommit();
-            if (commitRes.IsFailure)
-                return commitRes.Error;
+            transaction.Commit();
 
             return Result.Success<Error>();
         }

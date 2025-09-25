@@ -1,6 +1,4 @@
-﻿using DirectoryService.Contracts.Dtos;
-
-namespace DirectoryService.Contracts.Requests;
+﻿namespace DirectoryService.Contracts.Requests;
 public record CreateLocationRequest(
     string LocationName,
     string Address,

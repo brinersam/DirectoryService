@@ -4,7 +4,7 @@ using NpgsqlTypes;
 using System.Data;
 using System.Text.Json;
 
-namespace DirectoryService.Infrastructure.Database;
+namespace DirectoryService.Infrastructure.Database.TypeHandlers;
 public class JsonbTypeHandler<T> : SqlMapper.TypeHandler<T>
     where T : class
 {
