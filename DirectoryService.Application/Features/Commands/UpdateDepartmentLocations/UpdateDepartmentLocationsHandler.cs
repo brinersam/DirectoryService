@@ -40,13 +40,14 @@ public class UpdateDepartmentLocationsHandler
         if (duplicateLocationIds.Length > 0)
             return Error.Validation($"No duplicate location ids are allowed! [{string.Join(';', duplicateLocationIds)}]").ToSingleErrorArray();
 
-        var getActiveLocationsRes = await _locationRepository.GetLocationsAsync(cmd.Request.LocationIds, ct: ct);
-        if (getActiveLocationsRes.IsFailure)
-            return getActiveLocationsRes.Error.ToSingleErrorArray();
+        var getActiveLocationsRes = await _locationRepository.GetLocationsAsync(
+            cmd.Request.LocationIds,
+            true!,
+            ct: ct);
 
-        if (getActiveLocationsRes.Value.Count() != cmd.Request.LocationIds.Length)
+        if (getActiveLocationsRes.Count() != cmd.Request.LocationIds.Length)
         {
-            var activeValidLocationIds = getActiveLocationsRes.Value.Select(x => x.Id);
+            var activeValidLocationIds = getActiveLocationsRes.Select(x => x.Id);
             var invalidLocations = cmd.Request.LocationIds.Where(x => activeValidLocationIds.Contains(x) == false);
             return Error.Validation($"Some locations are inactive or invalid! ids: [{string.Join(';', invalidLocations)}]").ToSingleErrorArray();
         }

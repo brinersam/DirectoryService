@@ -124,7 +124,7 @@ public static class DependencyInjection
     private static IHostApplicationBuilder AddIDbConnection(this IHostApplicationBuilder builder)
     {
         var bdOpts = GetDbConfig(builder);
-
+        Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
         builder.Services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(bdOpts.CString));
         builder.Services.AddScoped<AppDb>();
         return builder;
