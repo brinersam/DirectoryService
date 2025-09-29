@@ -3,6 +3,7 @@ using DirectoryService.Application.Features.Commands.CreateLocation;
 using DirectoryService.Application.Features.Commands.CreatePosition;
 using DirectoryService.Application.Features.Commands.MoveDepartmentToParent;
 using DirectoryService.Application.Features.Commands.UpdateDepartmentLocations;
+using DirectoryService.Presentation.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
         builder.Services.AddScoped<CreatePositionHandler>();
         builder.Services.AddScoped<UpdateDepartmentLocationsHandler>();
         builder.Services.AddScoped<SetDepartmentParentHandler>();
+        builder.Services.AddScoped<GetLocationsHandler>();
         return builder;
     }
 

@@ -23,4 +23,15 @@ public class LocationsController : AppController
 
         return Ok(result.Value);
     }
+
+    [HttpGet()]
+    public async Task<IActionResult> GetLocations(
+        [FromQuery] GetLocationsRequest request,
+        [FromServices] GetLocationsHandler handler,
+        CancellationToken ct = default)
+    {
+        var cmd = new GetLocationsCommand(new(request.DepartmentIds, request.SearchName, request.IsActive), request.Pagination);
+        var result = await handler.HandleAsync(cmd, ct);
+        return Ok(result);
+    }
 }
