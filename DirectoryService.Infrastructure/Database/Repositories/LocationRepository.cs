@@ -1,10 +1,13 @@
 ﻿using CSharpFunctionalExtensions;
 using Dapper;
 using DirectoryService.Application.Interfaces;
+using DirectoryService.Contracts.Dtos;
 using DirectoryService.Domain.Models.Locations;
 using DirectoryService.Domain.Models.Locations.ValueObject;
+using DirectoryService.Shared;
 using DirectoryService.Shared.ErrorClasses;
 using DirectoryService.Shared.Framework.DbConnection;
+using DirectoryService.Shared.SharedDtos.Locations;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
@@ -70,7 +73,107 @@ public class LocationRepository : ILocationRepository
         }
     }
 
-    public async Task<Result<List<Location>, Error>> GetLocationsAsync(Guid[] locationIds, bool active = true, CancellationToken ct = default)
+    public async Task<PaginatedData<LocationDto>> QueryLocationsAsync(
+        LocationFilters? filters,
+        PaginationDto? pagination,
+        CancellationToken ct)
+    {
+        try
+        {
+            pagination ??= new PaginationDto();
+
+            var parameters = new DynamicParameters();
+            var cteSql = String.Empty;
+            var joinSql = String.Empty;
+            var whereSql = new StringBuilder("WHERE 1=1");
+
+            var limitOffsetSql = "LIMIT @Take OFFSET @Skip";
+            parameters.Add("Take", pagination.Take);
+            parameters.Add("Skip", pagination.Take * (pagination.Page - 1));
+
+            if (filters is not null)
+                ApplyFilters_QueryLocationsAsync(filters, parameters, ref cteSql, ref joinSql, whereSql);
+
+            var sql = $"""
+                {cteSql}
+                SELECT 
+                    id,
+                    name->>'Value' as location_name,
+                    address,
+                    timezone,
+                    is_active,
+                    created_at_utc,
+                    updated_at_utc,
+                    COUNT (*) OVER() as total_count
+                FROM {DbTables.Locations} l
+                {joinSql}
+                {whereSql} 
+                ORDER BY name ASC, created_at_utc DESC
+                {limitOffsetSql} ;
+                """;
+
+            var cmd = new CommandDefinition(sql, parameters, _db.Transaction, cancellationToken: ct);
+
+            long? totalElements = null;
+            var result = await _db.Connection.QueryAsync<LocationDto, long, LocationDto>(
+                cmd,
+                splitOn: "total_count",
+                map: (dto, count) =>
+                {
+                    totalElements ??= count;
+                    return dto;
+                });
+
+            return result.ToPaginatedList(pagination.Page, totalElements);
+        }
+        catch (Exception ex)
+        {
+            HandleError(ex);
+            return new List<LocationDto>().ToPaginatedList(0, 0);
+        }
+    }
+
+    private static void ApplyFilters_QueryLocationsAsync(LocationFilters filters, DynamicParameters parameters, ref string cteSql, ref string joinSql, StringBuilder whereSql)
+    {
+        foreach (var (paramName, value) in filters.IterateOnNonNullValues())
+        {
+            switch (paramName)
+            {
+                case nameof(LocationFilters.DepartmentIds):
+                    {
+                        cteSql = $"""
+                                    WITH related_departments AS
+                                    (
+                                        SELECT DISTINCT location_id
+                                        FROM department_location dl
+                                        WHERE 
+                                        department_id = ANY(@{paramName})
+                                    )
+                                    """;
+                        joinSql = "INNER JOIN related_departments rd ON rd.location_id = l.id";
+
+                        parameters.Add(paramName, value);
+                        break;
+                    }
+
+                case nameof(LocationFilters.SearchName):
+                    {
+                        whereSql.Append($" AND name->>'Value' ILIKE '%' || @{paramName} || '%'");
+                        parameters.Add(paramName, value);
+                        break;
+                    }
+
+                case nameof(LocationFilters.IsActive):
+                    {
+                        whereSql.Append($" AND is_active = @{paramName}");
+                        parameters.Add(paramName, value);
+                        break;
+                    }
+            }
+        }
+    }
+
+    public async Task<List<Location>> GetLocationsAsync(Guid[] locationIds, bool active = true, CancellationToken ct = default)
     {
         try
         {
@@ -79,17 +182,14 @@ public class LocationRepository : ILocationRepository
             var cmd = new CommandDefinition(sql.ToString(), new { Ids = locationIds.ToArray(), Active = active }, _db.Transaction, cancellationToken: ct);
 
             var result = await _db.Connection.QueryAsync<Location>(cmd);
-            if (result.Any() == false)
-                return Errors.General.NotFound(typeof(Location));
-
             return result.ToList();
         }
         catch (Exception ex)
         {
-            return HandleError(ex);
+            HandleError(ex);
+            return new List<Location> { };
         }
     }
-
 
     public async Task<UnitResult<Error>> AddLocationAsync(Location location, CancellationToken ct = default)
     {
