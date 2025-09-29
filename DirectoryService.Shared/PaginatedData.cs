@@ -9,7 +9,7 @@ public record PaginatedData<T>
 
     public long TotalElements { get; init; }
 
-    public int TotalPages => TotalElements <= 0 ? 0 
+    public int TotalPages => TotalElements <= 0 ? 0
                                                 : (int)Math.Ceiling((float)TotalElements / Take);
 
     public bool HasNextPage => Page < TotalPages;

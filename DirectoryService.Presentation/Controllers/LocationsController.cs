@@ -1,4 +1,5 @@
 ﻿using DirectoryService.Application.Features.Commands.CreateLocation;
+using DirectoryService.Application.Features.Commands.QueryLocations;
 using DirectoryService.Contracts.Requests;
 using DirectoryService.Shared.Framework;
 using Microsoft.AspNetCore.Mvc;
@@ -25,12 +26,12 @@ public class LocationsController : AppController
     }
 
     [HttpGet()]
-    public async Task<IActionResult> GetLocations(
-        [FromQuery] GetLocationsRequest request,
-        [FromServices] GetLocationsHandler handler,
+    public async Task<IActionResult> QueryLocations(
+        [FromQuery] QueryLocationsRequest request,
+        [FromServices] QueryLocationsHandler handler,
         CancellationToken ct = default)
     {
-        var cmd = new GetLocationsCommand(new(request.DepartmentIds, request.SearchName, request.IsActive), request.Pagination);
+        var cmd = new QueryLocationsCommand(new(request.DepartmentIds, request.SearchName, request.IsActive), request.Pagination);
         var result = await handler.HandleAsync(cmd, ct);
         return Ok(result);
     }

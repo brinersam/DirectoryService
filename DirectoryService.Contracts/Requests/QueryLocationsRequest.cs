@@ -1,8 +1,8 @@
 ﻿using DirectoryService.Shared;
 
-namespace DirectoryService.Presentation.Controllers;
+namespace DirectoryService.Contracts.Requests;
 
-public record GetLocationsRequest(
+public record QueryLocationsRequest(
     Guid[]? DepartmentIds,
     string? SearchName,
     bool? IsActive,
